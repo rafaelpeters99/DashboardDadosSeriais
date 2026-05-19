@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Telemetria em Tempo Real</title>
+    
+    <!-- Tailwind CSS para estilização rápida e responsiva -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para os gráficos de temperatura e pressão -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons para iconografia limpa -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Fonte Inter para um visual moderno -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc; /* Slate 50 */
+        }
+
+        /* Container do Radar */
+        #radar-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%; /* Mantém proporção 1:1 */
+            border-radius: 50%;
+            background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+            border: 2px solid #334155;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+        }
+
+        /* Efeito de varredura do radar */
+        .radar-sweep {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 50%;
+            height: 50%;
+            background: linear-gradient(45deg, rgba(16, 185, 129, 0) 0%, rgba(16, 185, 129, 0.4) 100%);
+            transform-origin: 0 0;
+            animation: sweep 4s linear infinite;
+            border-right: 2px solid #10b981;
+            z-index: 10;
+        }
+
+        @keyframes sweep {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Círculos concêntricos do radar */
+        .radar-grid {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            box-sizing: border-box;
+        }
+
+        .radar-grid-1 { width: 25%; height: 25%; top: 37.5%; left: 37.5%; }
+        .radar-grid-2 { width: 50%; height: 50%; top: 25%; left: 25%; }
+        .radar-grid-3 { width: 75%; height: 75%; top: 12.5%; left: 12.5%; }
+        
+        /* Eixos do radar */
+        .radar-axis-x, .radar-axis-y {
+            position: absolute;
+            background: rgba(51, 65, 85, 0.8);
+            z-index: 5;
+        }
+        .radar-axis-x { top: 50%; left: 0; width: 100%; height: 1px; }
+        .radar-axis-y { top: 0; left: 50%; width: 1px; height: 100%; }
+
+        /* Pontos (blips) detectados no radar */
+        .radar-blip {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444; /* Red 500 */
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px #ef4444, 0 0 5px #ef4444;
+            transition: opacity 1s ease-out;
+            z-index: 20;
+        }
+
+        /* Estilo para os cards de estatísticas */
+        .stat-card {
+            background: rgba(30, 41, 59, 0.7); /* Slate 800 com opacidade */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            border-color: #3b82f6; /* Blue 500 */
+            transform: translateY(-2px);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-6 lg:p-8 flex flex-col gap-6">
+
+    <header class="flex flex-col md:flex-row justify-between items-center bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 backdrop-blur-sm gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-500/20 rounded-lg">
+                <i data-lucide="activity" class="text-blue-400 animate-pulse"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                    Sistema de Telemetria
+                </h1>
+                <p class="text-sm text-slate-400 flex items-center gap-1.5">
+                    <span class="inline-block w-2 h-2 rounded-full bg-blue-500"></span> 
+                    Sincronização Multiusuário em Nuvem Ativa
+                </p>
+            </div>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Conexão em Nuvem Status -->
+            <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 rounded-lg border border-slate-700 text-xs">
+                <i data-lucide="cloud" class="w-4 h-4 text-slate-400" id="cloud-status-icon"></i>
+                <span id="cloud-status-text" class="text-slate-400 font-medium">Autenticando...</span>
+            </div>
+
+            <!-- Seleção de Fonte de Dados -->
+            <select id="data-source-select" class="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-sm px-3 py-2 text-white outline-none cursor-pointer">
+                <option value="simulation">Simulador Local</option>
+                <option value="serial">Dispositivo USB (ESP32) ? Envia p/ Nuvem</option>
+                <option value="cloud">Ouvinte da Nuvem (Recebe Telemetria)</option>
+            </select>
+
+            <!-- Transmitir simulador -->
+            <div id="sim-broadcast-container" class="flex items-center gap-2 px-3 py-1.5 bg-slate-700/40 rounded-lg border border-slate-600/50">
+                <label class="text-xs text-slate-300 font-medium cursor-pointer flex items-center gap-1.5">
+                    <input type="checkbox" id="sim-broadcast-checkbox" class="rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500">
+                    Transmitir Simulador
+                </label>
+            </div>
+
+            <button id="connect-serial-btn" class="hidden px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                <i data-lucide="usb" class="w-4 h-4"></i>
+                <span>Conectar ESP32</span>
+            </button>
+            <button id="toggle-sim-btn" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                <i data-lucide="power" class="w-4 h-4"></i>
+                <span id="btn-text">Pausar Dados</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Caixa de Dicas sobre a Sincronização -->
+    <div class="bg-blue-950/40 border border-blue-900/50 p-3 rounded-xl flex items-start gap-3 text-sm text-blue-200">
+        <i data-lucide="info" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
+        <div>
+            <span class="font-semibold text-blue-300">Como testar a Sincronização Global:</span> 
+            Abra esta página em duas abas (ou dispositivos diferentes). Em uma delas, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Simulador Local</span> e marque a opção <span class="font-semibold">Transmitir Simulador</span>. Na outra aba, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Ouvinte da Nuvem</span>. Todos os gráficos e radares se moverão perfeitamente sincronizados!
+        </div>
+    </div>
+
+    <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+        
+        <!-- Coluna Esquerda: Gráficos e Estatísticas -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+            
+            <!-- Linha de KPIs Rápidos -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="stat-card p-4 rounded-xl flex flex-col">
+                    <span class="text-slate-400 text-xs uppercase tracking-wider mb-1">Temp Atual</span>
+                    <div class="flex items-end gap-2">
+                        <span id="current-temp" class="text-3xl font-bold text-white">0.0</span>
+                        <span class="text-slate-500 mb-1">°C</span>
+                    </div>
+                </div>
+                <div class="stat-card p-4 rounded-xl flex flex-col">
+                    <span class="text-slate-400 text-xs uppercase tracking-wider mb-1">Pressão Atual</span>
+                    <div class="flex items-end gap-2">
+                        <span id="current-press" class="text-3xl font-bold text-white">0.0</span>
+                        <span class="text-slate-500 mb-1">hPa</span>
+                    </div>
+                </div>
+                <div class="stat-card p-4 rounded-xl flex flex-col">
+                    <span class="text-slate-400 text-xs uppercase tracking-wider mb-1">Objetos Ativos</span>
+                    <div class="flex items-end gap-2">
+                        <span id="obj-count" class="text-3xl font-bold text-emerald-400">0</span>
+                    </div>
+                </div>
+                <div class="stat-card p-4 rounded-xl flex flex-col">
+                    <span class="text-slate-400 text-xs uppercase tracking-wider mb-1">Origem dos Dados</span>
+                    <div class="flex items-end gap-1.5">
+                        <span id="lag-indicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 mb-2"></span>
+                        <span id="data-origin-text" class="text-lg font-bold text-blue-400 truncate max-w-[120px]">Local</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card p-5 rounded-2xl flex-grow flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <i data-lucide="thermometer" class="text-orange-400 w-5 h-5"></i>
+                        Histórico de Temperatura
+                    </h2>
+                    <div class="text-sm bg-slate-800/80 px-3 py-1 rounded-lg border border-slate-700 flex gap-4">
+                        <span title="Média">M: <span id="temp-mean" class="font-mono text-orange-300">0.0</span></span>
+                        <span title="Desvio Padrão">s: <span id="temp-std" class="font-mono text-orange-300">0.00</span></span>
+                    </div>
+                </div>
+                <div class="relative flex-grow h-48 md:h-64 w-full">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+
+            <div class="stat-card p-5 rounded-2xl flex-grow flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <i data-lucide="gauge" class="text-purple-400 w-5 h-5"></i>
+                        Histórico de Pressão
+                    </h2>
+                    <div class="text-sm bg-slate-800/80 px-3 py-1 rounded-lg border border-slate-700 flex gap-4">
+                        <span title="Média">M: <span id="press-mean" class="font-mono text-purple-300">0.0</span></span>
+                        <span title="Desvio Padrão">s: <span id="press-std" class="font-mono text-purple-300">0.00</span></span>
+                    </div>
+                </div>
+                <div class="relative flex-grow h-48 md:h-64 w-full">
+                    <canvas id="pressChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="flex flex-col gap-6">
+            
+            <!-- Painel do Radar Espacial -->
+            <div class="stat-card p-5 rounded-2xl flex flex-col">
+                <h2 class="text-lg font-semibold flex items-center gap-2 mb-6">
+                    <i data-lucide="radar" class="text-emerald-400 w-5 h-5 animate-spin" style="animation-duration: 8s;"></i>
+                    Scanner Espacial (Posição/Ângulo)
+                </h2>
+                
+                <div class="w-full max-w-[280px] mx-auto mb-4">
+                    <div id="radar-container">
+                        <!-- Grade do Radar -->
+                        <div class="radar-grid radar-grid-1"></div>
+                        <div class="radar-grid radar-grid-2"></div>
+                        <div class="radar-grid radar-grid-3"></div>
+                        <div class="radar-grid"></div>
+                        
+                        <!-- Eixos -->
+                        <div class="radar-axis-x"></div>
+                        <div class="radar-axis-y"></div>
+                        
+                        <!-- Feixe de Varredura -->
+                        <div class="radar-sweep" id="radar-sweep-beam"></div>
+                        
+                        <!-- Container para os blips dinâmicos -->
+                        <div id="blips-container"></div>
+                    </div>
+                </div>
+
+                <div class="text-center text-xs text-slate-400 flex justify-between px-2 mt-2">
+                    <span>Alcance: <strong class="text-emerald-400 font-mono">100m</strong></span>
+                    <span>Sincronismo: <strong id="latency-text" class="text-blue-400 font-mono">0ms</strong></span>
+                </div>
+            </div>
+
+            <!-- Últimas Detecções -->
+            <div class="stat-card p-5 rounded-2xl flex-grow flex flex-col">
+                <h2 class="text-lg font-semibold flex items-center gap-2 mb-4">
+                    <i data-lucide="list-collapse" class="text-slate-400 w-5 h-5"></i>
+                    Últimas Detecções
+                </h2>
+                
+                <div class="overflow-y-auto max-h-[220px] pr-2 flex-grow">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0">
+                            <tr>
+                                <th class="px-3 py-2 rounded-tl-lg">Tempo</th>
+                                <th class="px-3 py-2">Ângulo (°)</th>
+                                <th class="px-3 py-2 rounded-tr-lg">Dist. (m)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detection-log" class="font-mono">
+                            <!-- Linhas inseridas via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Painel de Informações da Nuvem -->
+            <div class="stat-card p-4 rounded-xl bg-slate-800/30 text-xs border border-slate-700/60 flex flex-col gap-2">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">ID da Sessão Local:</span>
+                    <span id="local-session-id" class="font-mono text-blue-300">...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Transmissor Ativo:</span>
+                    <span id="broadcaster-id-text" class="font-mono text-emerald-400 truncate max-w-[150px]">Nenhum</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Console Serial Inferior para Depuração física -->
+    <footer class="stat-card p-4 rounded-2xl border border-slate-700/50">
+        <div class="flex justify-between items-center mb-2">
+            <h3 class="text-sm font-semibold flex items-center gap-2 text-slate-300">
+                <i data-lucide="terminal" class="w-4 h-4 text-blue-400"></i>
+                Console Serial de Monitoramento (ESP32)
+            </h3>
+            <button id="clear-console-btn" class="text-xs text-slate-400 hover:text-white transition-colors bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                Limpar Logs
+            </button>
+        </div>
+        <div id="serial-terminal" class="h-24 bg-black/50 rounded-lg p-2 font-mono text-xs text-slate-300 overflow-y-auto border border-slate-800 flex flex-col gap-0.5">
+            <span class="text-slate-500">[Sistema] Selecione o modo "Dispositivo USB (ESP32)" e clique em "Conectar ESP32" para monitorar e compartilhar dados físicos.</span>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Inicializar ícones Lucide
+        lucide.createIcons();
+
+        // ---------------------------------------------------------
+        // Configurações do Firebase com Fallback Seguro
+        // ---------------------------------------------------------
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'telemetria-esp32-app';
+        const defaultFirebaseConfig = {
+            apiKey: "",
+            authDomain: "dummy.firebaseapp.com",
+            projectId: "dummy-project",
+            storageBucket: "dummy.appspot.com",
+            messagingSenderId: "123456",
+            appId: "1:123456:web:12345"
+        };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
+
+        // Inicialização de Instâncias
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // ---------------------------------------------------------
+        // Configurações Globais e Variáveis de Estado
+        // ---------------------------------------------------------
+        const MAX_DATA_POINTS = 50; 
+        const UPDATE_INTERVAL = 1000; // 1 segundo (1Hz) para o loop do simulador
+        
+        let isSimulating = true;
+        let simulationInterval;
+        let radarAngle = 0; 
+        let activeDataSource = 'simulation'; 
+        let shouldBroadcastSim = false; // Se o simulador deve enviar dados para a nuvem
+        let lastFirestoreWriteTime = 0;
+        const FIRESTORE_WRITE_THROTTLE = 1000; // Máximo 1 escrita por segundo para respeitar limites do Firestore
+
+        // Controle da Conexão Web Serial API
+        let serialPort = null;
+        let serialReader = null;
+        let serialBuffer = "";
+
+        // Arrays de Estatísticas
+        let tempHistory = [];
+        let pressHistory = [];
+        let objectsInRadar = [];
+
+        // Referência de desativação do listener da nuvem
+        let unsubscribeCloud = null;
+
+        // ---------------------------------------------------------
+        // Seleção de Elementos de Interface
+        // ---------------------------------------------------------
+        const dataSourceSelect = document.getElementById('data-source-select');
+        const connectSerialBtn = document.getElementById('connect-serial-btn');
+        const toggleSimBtn = document.getElementById('toggle-sim-btn');
+        const serialTerminal = document.getElementById('serial-terminal');
+        const clearConsoleBtn = document.getElementById('clear-console-btn');
+        const simBroadcastContainer = document.getElementById('sim-broadcast-container');
+        const simBroadcastCheckbox = document.getElementById('sim-broadcast-checkbox');
+        
+        // Elementos de Status
+        const cloudStatusIcon = document.getElementById('cloud-status-icon');
+        const cloudStatusText = document.getElementById('cloud-status-text');
+        const localSessionIdEl = document.getElementById('local-session-id');
+        const broadcasterIdText = document.getElementById('broadcaster-id-text');
+        const lagIndicator = document.getElementById('lag-indicator');
+        const dataOriginText = document.getElementById('data-origin-text');
+        const latencyText = document.getElementById('latency-text');
+
+        function logToTerminal(message, type = 'info') {
+            const span = document.createElement('span');
+            const timeStr = new Date().toLocaleTimeString();
+            let color = 'text-slate-300';
+            
+            if (type === 'error') color = 'text-red-400';
+            if (type === 'success') color = 'text-emerald-400';
+            if (type === 'warn') color = 'text-amber-400';
+            if (type === 'data') color = 'text-blue-300';
+
+            span.className = `${color}`;
+            span.textContent = `[${timeStr}] ${message}`;
+            serialTerminal.appendChild(span);
+            serialTerminal.scrollTop = serialTerminal.scrollHeight;
+
+            if (serialTerminal.children.length > 100) {
+                serialTerminal.removeChild(serialTerminal.firstChild);
+            }
+        }
+
+        clearConsoleBtn.addEventListener('click', () => {
+            serialTerminal.innerHTML = '<span class="text-slate-500">[Sistema] Logs limpos.</span>';
+        });
+
+        // ---------------------------------------------------------
+        // Autenticação Silenciosa em Nuvem
+        // ---------------------------------------------------------
+        async function authenticateCloud() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                cloudStatusText.textContent = "Erro na Nuvem";
+                cloudStatusIcon.setAttribute('class', "w-4 h-4 text-red-500");
+                logToTerminal(`Erro de conexão com servidor em nuvem: ${err.message}`, "error");
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                localSessionIdEl.textContent = user.uid.substring(0, 8) + "...";
+                cloudStatusText.textContent = "Nuvem Pronta";
+                cloudStatusIcon.setAttribute('class', "w-4 h-4 text-emerald-400");
+                logToTerminal(`Sessão de nuvem ativa. ID: ${user.uid}`, "success");
+            } else {
+                cloudStatusText.textContent = "Desconectado";
+                cloudStatusIcon.setAttribute('class', "w-4 h-4 text-slate-500");
+            }
+        });
+
+        async function broadcastTelemetry(data) {
+            const user = auth.currentUser;
+            if (!user) return;
+
+            const now = Date.now();
+            // Aplica throttle para evitar limite de concorrência do Firestore
+            if (now - lastFirestoreWriteTime < FIRESTORE_WRITE_THROTTLE) return;
+            lastFirestoreWriteTime = now;
+
+            // Transmite apenas as detecções ativas da varredura atual para otimizar tamanho do pacote
+            const activeDetections = objectsInRadar.filter(obj => (now - obj.timestamp) < 3000);
+
+            // Documento compartilhado globalmente
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'telemetry', 'latest');
+            try {
+                await setDoc(docRef, {
+                    timestamp: data.timestamp,
+                    temperature: data.temperature,
+                    pressure: data.pressure,
+                    radarDetections: activeDetections.map(d => ({
+                        angle: d.angle,
+                        distance: d.distance,
+                        timestamp: d.timestamp
+                    })),
+                    broadcasterId: user.uid,
+                    updatedAt: now
+                });
+            } catch (err) {
+                console.error("Erro na transmissão da telemetria:", err);
+            }
+        }
+
+        function startListeningCloud() {
+            stopListeningCloud(); // Evita duplicações
+            const user = auth.currentUser;
+            if (!user) {
+                logToTerminal("Aguardando inicialização da nuvem...", "warn");
+                return;
+            }
+
+            logToTerminal("Iniciando escuta ativa da nuvem...", "info");
+            
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'telemetry', 'latest');
+            
+            unsubscribeCloud = onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const cloudData = docSnap.data();
+                    
+                    // Não processa novamente os próprios dados transmitidos por este dispositivo
+                    if (cloudData.broadcasterId === user.uid) {
+                        broadcasterIdText.textContent = `Você (${cloudData.broadcasterId.substring(0,6)})`;
+                        return; 
+                    }
+
+                    broadcasterIdText.textContent = cloudData.broadcasterId.substring(0, 8) + "...";
+                    
+                    // Calcula a latência/delay da transmissão
+                    const lag = Date.now() - cloudData.updatedAt;
+                    latencyText.textContent = `${lag}ms`;
+
+                    // Alinha e importa os blips de radar remotos mantendo a idade correta no cliente local
+                    const adjustedDetections = (cloudData.radarDetections || []).map(det => {
+                        const ageOffset = cloudData.updatedAt - det.timestamp;
+                        return {
+                            angle: det.angle,
+                            distance: det.distance,
+                            timestamp: Date.now() - ageOffset
+                        };
+                    });
+
+                    // Insere as detecções remotas recebidas
+                    adjustedDetections.forEach(det => {
+                        // Verifica duplicidade no mesmo tempo aproximado
+                        const exists = objectsInRadar.some(existing => 
+                            Math.abs(existing.angle - det.angle) < 2 && 
+                            Math.abs(existing.distance - det.distance) < 2
+                        );
+                        if (!exists) {
+                            objectsInRadar.push(det);
+                            addDetectionToLog(det.angle, det.distance);
+                        }
+                    });
+
+                    // Constrói e processa os dados locais na UI
+                    const telemetryData = {
+                        timestamp: cloudData.timestamp,
+                        temperature: cloudData.temperature,
+                        pressure: cloudData.pressure,
+                        radarDetections: adjustedDetections
+                    };
+
+                    processIncomingData(telemetryData, false); // false = não retransmite
+                }
+            }, (error) => {
+                logToTerminal(`Erro de conexão com os dados: ${error.message}`, "error");
+            });
+        }
+
+        function stopListeningCloud() {
+            if (unsubscribeCloud) {
+                unsubscribeCloud();
+                unsubscribeCloud = null;
+            }
+            broadcasterIdText.textContent = "Nenhum";
+            latencyText.textContent = "0ms";
+        }
+
+        const calcMean = (arr) => arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length;
+        
+        const calcStdDev = (arr, mean) => {
+            if (arr.length <= 1) return 0;
+            const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / (arr.length - 1);
+            return Math.sqrt(variance);
+        };
+
+        const updateStats = (dataArray, meanElementId, stdElementId) => {
+            if(dataArray.length === 0) return;
+            const mean = calcMean(dataArray);
+            const stdDev = calcStdDev(dataArray, mean);
+            
+            document.getElementById(meanElementId).textContent = mean.toFixed(1);
+            document.getElementById(stdElementId).textContent = stdDev.toFixed(2);
+        };
+
+        // Instanciação de Gráficos
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        
+        const commonChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 400, easing: 'linear' },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    titleColor: '#f8fafc',
+                    bodyColor: '#e2e8f0',
+                    borderColor: '#334155',
+                    borderWidth: 1
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(51, 65, 85, 0.3)', drawBorder: false },
+                    ticks: { maxTicksLimit: 10 }
+                },
+                y: {
+                    grid: { color: 'rgba(51, 65, 85, 0.5)', drawBorder: false }
+                }
+            },
+            elements: {
+                point: { radius: 0, hitRadius: 10, hoverRadius: 4 }
+            }
+        };
+
+        const ctxTemp = document.getElementById('tempChart').getContext('2d');
+        const tempGradient = ctxTemp.createLinearGradient(0, 0, 0, 300);
+        tempGradient.addColorStop(0, 'rgba(251, 146, 60, 0.5)'); 
+        tempGradient.addColorStop(1, 'rgba(251, 146, 60, 0.0)');
+
+        const tempChart = new Chart(ctxTemp, {
+            type: 'line',
+            data: {
+                labels: Array(MAX_DATA_POINTS).fill(''),
+                datasets: [{
+                    label: 'Temperatura (°C)',
+                    data: Array(MAX_DATA_POINTS).fill(null),
+                    borderColor: '#fb923c', 
+                    backgroundColor: tempGradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                ...commonChartOptions,
+                scales: { ...commonChartOptions.scales, y: { ...commonChartOptions.scales.y, suggestedMin: 20, suggestedMax: 40 } }
+            }
+        });
+
+        const ctxPress = document.getElementById('pressChart').getContext('2d');
+        const pressGradient = ctxPress.createLinearGradient(0, 0, 0, 300);
+        pressGradient.addColorStop(0, 'rgba(192, 132, 252, 0.5)'); 
+        pressGradient.addColorStop(1, 'rgba(192, 132, 252, 0.0)');
+
+        const pressChart = new Chart(ctxPress, {
+            type: 'line',
+            data: {
+                labels: Array(MAX_DATA_POINTS).fill(''),
+                datasets: [{
+                    label: 'Pressão (hPa)',
+                    data: Array(MAX_DATA_POINTS).fill(null),
+                    borderColor: '#c084fc', 
+                    backgroundColor: pressGradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                ...commonChartOptions,
+                scales: { ...commonChartOptions.scales, y: { ...commonChartOptions.scales.y, suggestedMin: 1000, suggestedMax: 1025 } }
+            }
+        });
+
+        const blipsContainer = document.getElementById('blips-container');
+        const detectionLog = document.getElementById('detection-log');
+
+        function polarToCartesian(angleDegrees, distance) {
+            // Conversão trigonométrica ajustada para varredura de cima em sentido horário
+            const angleRads = (angleDegrees - 90) * (Math.PI / 180);
+            const r = (distance / 100) * 50; 
+            const x = 50 + (r * Math.cos(angleRads));
+            const y = 50 + (r * Math.sin(angleRads));
+            return { x, y };
+        }
+
+        function renderBlips() {
+            blipsContainer.innerHTML = ''; 
+            const now = Date.now();
+            
+            objectsInRadar.forEach(obj => {
+                const pos = polarToCartesian(obj.angle, obj.distance);
+                const blip = document.createElement('div');
+                blip.className = 'radar-blip';
+                blip.style.left = `${pos.x}%`;
+                blip.style.top = `${pos.y}%`;
+                
+                // Opacidade calculada pelo tempo residual
+                const age = now - obj.timestamp;
+                const maxAge = 4000; 
+                let opacity = 1 - (age / maxAge);
+                
+                if (opacity > 0) {
+                    blip.style.opacity = opacity;
+                    blipsContainer.appendChild(blip);
+                }
+            });
+
+            // Retém apenas objetos escaneados nos últimos 4 segundos
+            objectsInRadar = objectsInRadar.filter(obj => (now - obj.timestamp) < 4000);
+            document.getElementById('obj-count').textContent = objectsInRadar.length;
+        }
+
+        function visualLoop() {
+            renderBlips();
+            requestAnimationFrame(visualLoop);
+        }
+        visualLoop();
+
+        function addDetectionToLog(angle, distance) {
+            const row = document.createElement('tr');
+            row.className = 'border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors text-xs';
+            
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+
+            row.innerHTML = `
+                <td class="px-3 py-1.5 text-slate-300">${timeStr}</td>
+                <td class="px-3 py-1.5 text-blue-300">${angle.toFixed(1)}</td>
+                <td class="px-3 py-1.5 text-emerald-300">${distance.toFixed(1)}</td>
+            `;
+
+            detectionLog.prepend(row);
+            if (detectionLog.children.length > 10) {
+                detectionLog.removeChild(detectionLog.lastChild);
+            }
+        }
+
+        function processIncomingData(data, shouldSync = true) {
+            // Atualiza tela principal
+            document.getElementById('current-temp').textContent = data.temperature.toFixed(1);
+            document.getElementById('current-press').textContent = data.pressure.toFixed(1);
+
+            // Coleta dados históricos para cálculos amostrais
+            tempHistory.push(data.temperature);
+            pressHistory.push(data.pressure);
+            
+            if (tempHistory.length > MAX_DATA_POINTS) tempHistory.shift();
+            if (pressHistory.length > MAX_DATA_POINTS) pressHistory.shift();
+
+            updateStats(tempHistory, 'temp-mean', 'temp-std');
+            updateStats(pressHistory, 'press-mean', 'press-std');
+
+            // Atualiza gráficos sem renderização de frames completos (otimização extrema)
+            tempChart.data.labels.push(data.timestamp);
+            tempChart.data.datasets[0].data.push(data.temperature);
+            if (tempChart.data.labels.length > MAX_DATA_POINTS) {
+                tempChart.data.labels.shift();
+                tempChart.data.datasets[0].data.shift();
+            }
+            tempChart.update('none');
+
+            pressChart.data.labels.push(data.timestamp);
+            pressChart.data.datasets[0].data.push(data.pressure);
+            if (pressChart.data.labels.length > MAX_DATA_POINTS) {
+                pressChart.data.labels.shift();
+                pressChart.data.datasets[0].data.shift();
+            }
+            pressChart.update('none');
+
+            // Se for transmissor e a sincronização estiver permitida, sobe para o banco compartilhado
+            if (shouldSync && (activeDataSource === 'serial' || (activeDataSource === 'simulation' && shouldBroadcastSim))) {
+                broadcastTelemetry(data);
+            }
+        }
+
+        let baseTemp = 25.0;
+        let basePress = 1013.2;
+
+        function generateSimulatedData() {
+            baseTemp += (Math.random() - 0.5) * 0.5;
+            if(baseTemp > 35) baseTemp -= 0.5;
+            if(baseTemp < 15) baseTemp += 0.5;
+
+            basePress += (Math.random() - 0.5) * 1.5;
+            if(basePress > 1030) basePress -= 1;
+            if(basePress < 1000) basePress += 1;
+
+            const timeLabel = new Date().toLocaleTimeString('pt-BR', { hour12: false, second: '2-digit', minute: '2-digit', hour: '2-digit' });
+
+            radarAngle = (radarAngle + 90) % 360; 
+            
+            let detectedObjects = [];
+            if (Math.random() < 0.25) {
+                const objAngle = radarAngle + (Math.random() * 15 - 7.5); 
+                const objDist = 15 + (Math.random() * 75); 
+                
+                const newObj = {
+                    angle: objAngle % 360,
+                    distance: objDist,
+                    timestamp: Date.now()
+                };
+                detectedObjects.push(newObj);
+                objectsInRadar.push(newObj);
+                addDetectionToLog(newObj.angle, newObj.distance);
+            }
+
+            return {
+                timestamp: timeLabel,
+                temperature: baseTemp,
+                pressure: basePress,
+                radarDetections: detectedObjects
+            };
+        }
+
+        async function readSerialStream() {
+            const textDecoder = new TextDecoder();
+            while (serialPort && serialPort.readable) {
+                try {
+                    serialReader = serialPort.readable.getReader();
+                    logToTerminal("Porta serial detectada com sucesso. Recebendo dados...", "success");
+                    
+                    while (true) {
+                        const { value, done } = await serialReader.read();
+                        if (done) {
+                            logToTerminal("Monitoramento encerrado.", "warn");
+                            break;
+                        }
+                        
+                        const textChunk = textDecoder.decode(value);
+                        serialBuffer += textChunk;
+                        
+                        let lines = serialBuffer.split("\n");
+                        serialBuffer = lines.pop(); // Mantém dados incompletos no buffer
+                        
+                        for (let line of lines) {
+                            line = line.trim();
+                            if (line.length === 0) continue;
+                            
+                            logToTerminal(line, 'data');
+                            
+                            if (line.startsWith("{") && line.endsWith("}")) {
+                                try {
+                                    const parsed = JSON.parse(line);
+                                    let radarDetections = [];
+                                    
+                                    if (parsed.angle !== undefined && parsed.dist !== undefined) {
+                                        radarAngle = parsed.angle;
+                                        if (parsed.dist > 0 && parsed.dist < 100) {
+                                            const newObj = {
+                                                angle: parsed.angle,
+                                                distance: parsed.dist,
+                                                timestamp: Date.now()
+                                            };
+                                            radarDetections.push(newObj);
+                                            objectsInRadar.push(newObj);
+                                            addDetectionToLog(parsed.angle, parsed.dist);
+                                        }
+                                    }
+
+                                    const timeLabel = new Date().toLocaleTimeString('pt-BR', { hour12: false, second: '2-digit', minute: '2-digit', hour: '2-digit' });
+
+                                    const telemetryData = {
+                                        timestamp: timeLabel,
+                                        temperature: parsed.temp !== undefined ? parsed.temp : baseTemp,
+                                        pressure: parsed.press !== undefined ? parsed.press : basePress,
+                                        radarDetections: radarDetections
+                                    };
+
+                                    processIncomingData(telemetryData);
+
+                                } catch (err) {
+                                    logToTerminal(`Falha ao converter pacote JSON: ${err.message}`, 'error');
+                                }
+                            }
+                        }
+                    }
+                } catch (err) {
+                    logToTerminal(`Ocorreu um erro na transmissão de dados: ${err.message}`, 'error');
+                } finally {
+                    if (serialReader) {
+                        serialReader.releaseLock();
+                    }
+                }
+            }
+        }
+
+        async function connectSerialDevice() {
+            if (!("serial" in navigator)) {
+                logToTerminal("Esta página não possui permissões ou suporte para Web Serial API no seu navegador.", "error");
+                return;
+            }
+
+            try {
+                logToTerminal("Aguardando seleção da porta USB para parear com o ESP32...", "info");
+                serialPort = await navigator.serial.requestPort();
+                await serialPort.open({ baudRate: 115200 });
+                
+                lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse');
+                dataOriginText.textContent = 'ESP32 Real';
+                connectSerialBtn.innerHTML = '<i data-lucide="usb-off" class="w-4 h-4"></i> Desconectar';
+                lucide.createIcons();
+
+                readSerialStream();
+
+            } catch (err) {
+                logToTerminal(`Erro de pareamento com porta serial: ${err.message}`, "error");
+                serialPort = null;
+            }
+        }
+
+        async function disconnectSerialDevice() {
+            logToTerminal("Interrompendo transmissão física...", "info");
+            
+            if (serialReader) {
+                await serialReader.cancel();
+            }
+            if (serialPort) {
+                await serialPort.close();
+                serialPort = null;
+            }
+
+            lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-slate-500');
+            dataOriginText.textContent = 'Desconectado';
+            connectSerialBtn.innerHTML = '<i data-lucide="usb" class="w-4 h-4"></i> Conectar ESP32';
+            lucide.createIcons();
+            logToTerminal("ESP32 desconectado com sucesso.", "warn");
+        }
+
+        function startSimulation() {
+            simulationInterval = setInterval(() => {
+                const newData = generateSimulatedData();
+                processIncomingData(newData);
+            }, UPDATE_INTERVAL);
+            document.getElementById('radar-sweep-beam').style.animationPlayState = 'running';
+        }
+
+        function stopSimulation() {
+            clearInterval(simulationInterval);
+            document.getElementById('radar-sweep-beam').style.animationPlayState = 'paused';
+        }
+
+        // Listener de fonte de dados principal
+        dataSourceSelect.addEventListener('change', async (e) => {
+            activeDataSource = e.target.value;
+            stopSimulation();
+            stopListeningCloud();
+            
+            if (serialPort) {
+                await disconnectSerialDevice();
+            }
+
+            if (activeDataSource === 'simulation') {
+                connectSerialBtn.classList.add('hidden');
+                toggleSimBtn.classList.remove('hidden');
+                simBroadcastContainer.classList.remove('hidden');
+                
+                isSimulating = true;
+                startSimulation();
+                
+                lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse');
+                dataOriginText.textContent = 'Simulador';
+                logToTerminal("Controlador chaveado para Simulador Local.", "info");
+
+            } else if (activeDataSource === 'serial') {
+                isSimulating = false;
+                connectSerialBtn.classList.remove('hidden');
+                toggleSimBtn.classList.add('hidden');
+                simBroadcastContainer.classList.add('hidden');
+                
+                lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-slate-500');
+                dataOriginText.textContent = 'Física';
+                logToTerminal("Controlador chaveado para porta USB Serial. Aguardando conexão...", "warn");
+
+            } else if (activeDataSource === 'cloud') {
+                isSimulating = false;
+                connectSerialBtn.classList.add('hidden');
+                toggleSimBtn.classList.add('hidden');
+                simBroadcastContainer.classList.add('hidden');
+                
+                lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse');
+                dataOriginText.textContent = 'Nuvem';
+                
+                startListeningCloud();
+                logToTerminal("Iniciando escuta ativa de telemetria na nuvem.", "info");
+            }
+        });
+
+        // Configuração de transmissão de simulador
+        simBroadcastCheckbox.addEventListener('change', (e) => {
+            shouldBroadcastSim = e.target.checked;
+            if (shouldBroadcastSim) {
+                logToTerminal("Sua simulação local agora está sendo transmitida para a nuvem!", "success");
+            } else {
+                logToTerminal("Transmissão do simulador pausada.", "info");
+            }
+        });
+
+        // Conexão USB física
+        connectSerialBtn.addEventListener('click', () => {
+            if (serialPort) {
+                disconnectSerialDevice();
+            } else {
+                connectSerialDevice();
+            }
+        });
+
+        // Controle play/pause local
+        toggleSimBtn.addEventListener('click', (e) => {
+            isSimulating = !isSimulating;
+            const btnText = document.getElementById('btn-text');
+
+            if (isSimulating) {
+                startSimulation();
+                btnText.textContent = 'Pausar Dados';
+                lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse');
+            } else {
+                stopSimulation();
+                btnText.textContent = 'Retomar Dados';
+                lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-slate-500');
+            }
+        });
+
+        // Inicializador Global da Aplicação
+        window.onload = async () => {
+            tempChart.update();
+            pressChart.update();
+            await authenticateCloud();
+            startSimulation();
+        };
+
+    </script>
+</body>
+</html>
