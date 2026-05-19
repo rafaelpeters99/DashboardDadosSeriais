@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Telemetria em Tempo Real</title>
+    <title>Dashboard de Telemetria em Tempo Real - P2P</title>
     
     <!-- Tailwind CSS para estilização rápida e responsiva -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -36,23 +36,19 @@
             box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
         }
 
-        /* Efeito de varredura do radar */
+        /* Efeito de varredura do radar (Sincronizado via JS) */
         .radar-sweep {
             position: absolute;
             top: 50%;
             left: 50%;
             width: 50%;
             height: 50%;
-            background: linear-gradient(45deg, rgba(16, 185, 129, 0) 0%, rgba(16, 185, 129, 0.4) 100%);
+            background: linear-gradient(45deg, rgba(16, 185, 129, 0) 0%, rgba(16, 185, 129, 0.3) 100%);
             transform-origin: 0 0;
-            animation: sweep 4s linear infinite;
             border-right: 2px solid #10b981;
             z-index: 10;
-        }
-
-        @keyframes sweep {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            transform: rotate(-90deg); /* Posição inicial */
+            pointer-events: none;
         }
 
         /* Círculos concêntricos do radar */
@@ -62,6 +58,7 @@
             border-radius: 50%;
             border: 1px solid rgba(51, 65, 85, 0.5);
             box-sizing: border-box;
+            pointer-events: none;
         }
 
         .radar-grid-1 { width: 25%; height: 25%; top: 37.5%; left: 37.5%; }
@@ -73,6 +70,7 @@
             position: absolute;
             background: rgba(51, 65, 85, 0.8);
             z-index: 5;
+            pointer-events: none;
         }
         .radar-axis-x { top: 50%; left: 0; width: 100%; height: 1px; }
         .radar-axis-y { top: 0; left: 50%; width: 1px; height: 100%; }
@@ -80,13 +78,13 @@
         /* Pontos (blips) detectados no radar */
         .radar-blip {
             position: absolute;
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
             background-color: #ef4444; /* Red 500 */
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 10px #ef4444, 0 0 5px #ef4444;
-            transition: opacity 1s ease-out;
+            box-shadow: 0 0 12px #ef4444, 0 0 6px #ef4444;
+            transition: opacity 0.15s ease;
             z-index: 20;
         }
 
@@ -102,7 +100,7 @@
             transform: translateY(-2px);
         }
 
-        /* Custom Scrollbar */
+        /* Barra de rolagem personalizada */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -114,38 +112,38 @@
     <header class="flex flex-col md:flex-row justify-between items-center bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 backdrop-blur-sm gap-4">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-blue-500/20 rounded-lg">
-                <i data-lucide="activity" class="text-blue-400 animate-pulse"></i>
+                <i data-lucide="shuffle" class="text-blue-400 animate-pulse"></i>
             </div>
             <div>
                 <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
                     Sistema de Telemetria
                 </h1>
                 <p class="text-sm text-slate-400 flex items-center gap-1.5">
-                    <span class="inline-block w-2 h-2 rounded-full bg-blue-500"></span> 
-                    Sincroniza&ccedil;&atilde;o Multiusu&aacute;rio em Nuvem Ativa
+                    <span class="inline-block w-2 h-2 rounded-full bg-blue-500 animate-ping"></span> 
+                    Sincroniza&ccedil;&atilde;o Direta WebRTC / Local P2P
                 </p>
             </div>
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
-            <!-- Conexão em Nuvem Status -->
+            <!-- Conexão P2P Status -->
             <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 rounded-lg border border-slate-700 text-xs">
-                <i data-lucide="cloud" class="w-4 h-4 text-slate-400" id="cloud-status-icon"></i>
-                <span id="cloud-status-text" class="text-slate-400 font-medium">Autenticando...</span>
+                <i data-lucide="network" class="w-4 h-4 text-slate-400" id="p2p-status-icon"></i>
+                <span id="p2p-status-text" class="text-slate-400 font-medium">Rede Pronta</span>
             </div>
 
             <!-- Seleção de Fonte de Dados -->
             <select id="data-source-select" class="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-sm px-3 py-2 text-white outline-none cursor-pointer">
                 <option value="simulation">Simulador Local</option>
-                <option value="serial">Dispositivo USB (ESP32) &rarr; Envia p/ Nuvem</option>
-                <option value="cloud">Ouvinte da Nuvem (Recebe Telemetria)</option>
+                <option value="serial">Dispositivo USB (ESP32) &rarr; Transmissor Host</option>
+                <option value="p2p-listener">Ouvinte P2P (Recebe de um Host)</option>
             </select>
 
             <!-- Transmitir simulador -->
             <div id="sim-broadcast-container" class="flex items-center gap-2 px-3 py-1.5 bg-slate-700/40 rounded-lg border border-slate-600/50">
                 <label class="text-xs text-slate-300 font-medium cursor-pointer flex items-center gap-1.5">
                     <input type="checkbox" id="sim-broadcast-checkbox" class="rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500">
-                    Transmitir Simulador
+                    Transmitir P2P
                 </label>
             </div>
 
@@ -160,12 +158,45 @@
         </div>
     </header>
 
-    <!-- Caixa de Dicas sobre a Sincronização -->
+    <!-- Gaveta de Configuração P2P Dinâmica -->
+    <div id="p2p-panel" class="bg-slate-800/60 border border-slate-700/50 p-4 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-emerald-500/10 rounded-lg">
+                <i data-lucide="share-2" class="text-emerald-400 w-5 h-5"></i>
+            </div>
+            <div>
+                <span id="p2p-panel-title" class="font-semibold text-slate-200 block">Modo Transmissor Ativo</span>
+                <span id="p2p-panel-desc" class="text-xs text-slate-400">Ative "Transmitir P2P" ou conecte o ESP32 para gerar o ID da sua Sala.</span>
+            </div>
+        </div>
+        
+        <!-- Área de Interação P2P -->
+        <div class="flex items-center gap-2 w-full md:w-auto">
+            <!-- Caso Host -->
+            <div id="p2p-host-area" class="hidden flex items-center gap-2 bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-lg text-sm w-full md:w-auto justify-between">
+                <span class="text-slate-400 text-xs mr-1">ID da sua Sala:</span>
+                <span id="local-peer-id" class="font-mono font-bold text-emerald-400 px-2 tracking-wider">CANAL-TELEMETRIA</span>
+                <button id="copy-peer-id-btn" class="text-slate-400 hover:text-white transition-colors ml-1" title="Copiar ID">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Caso Ouvinte -->
+            <div id="p2p-client-area" class="hidden flex items-center gap-2 w-full">
+                <input type="text" id="target-peer-id-input" value="CANAL-TELEMETRIA" placeholder="Insira o ID da Sala P2P..." class="bg-slate-900 border border-slate-700 rounded-lg text-sm px-3 py-2 text-white outline-none focus:border-blue-500 w-full md:w-64 tracking-wider uppercase font-mono">
+                <button id="connect-p2p-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors shrink-0">
+                    Ligar &agrave; Sala
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Caixa de Dicas sobre a Sincronização P2P -->
     <div class="bg-blue-950/40 border border-blue-900/50 p-3 rounded-xl flex items-start gap-3 text-sm text-blue-200">
         <i data-lucide="info" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
         <div>
-            <span class="font-semibold text-blue-300">Como testar a Sincroniza&ccedil;&atilde;o Global:</span> 
-            Abra esta p&aacute;gina em duas abas (ou dispositivos diferentes). Em uma delas, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Simulador Local</span> e marque a op&ccedil;&atilde;o <span class="font-semibold">Transmitir Simulador</span>. Na outra aba, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Ouvinte da Nuvem</span>. Todos os gr&aacute;ficos e radares se mover&atilde;o perfeitamente sincronizados!
+            <span class="font-semibold text-blue-300">Como testar a Sincroniza&ccedil;&atilde;o Direta P2P (Broadcast Local):</span> 
+            Abra esta p&aacute;gina em dois separadores. No primeiro, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Simulador Local</span> e marque a op&ccedil;&atilde;o <span class="font-semibold">Transmitir P2P</span>. No segundo separador, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Ouvinte P2P</span> e clique em "Ligar &agrave; Sala" (o canal padrão é <span class="font-mono text-emerald-300">CANAL-TELEMETRIA</span>). A transmissão funcionará instantaneamente sem erros de conexão!
         </div>
     </div>
 
@@ -191,9 +222,9 @@
                     </div>
                 </div>
                 <div class="stat-card p-4 rounded-xl flex flex-col">
-                    <span class="text-slate-400 text-xs uppercase tracking-wider mb-1">Objetos Ativos</span>
+                    <span class="text-slate-400 text-xs uppercase tracking-wider mb-1">Peers Ligados</span>
                     <div class="flex items-end gap-2">
-                        <span id="obj-count" class="text-3xl font-bold text-emerald-400">0</span>
+                        <span id="p2p-connected-count" class="text-3xl font-bold text-emerald-400 font-mono">0</span>
                     </div>
                 </div>
                 <div class="stat-card p-4 rounded-xl flex flex-col">
@@ -244,7 +275,7 @@
             <!-- Painel do Radar Espacial -->
             <div class="stat-card p-5 rounded-2xl flex flex-col">
                 <h2 class="text-lg font-semibold flex items-center gap-2 mb-6">
-                    <i data-lucide="radar" class="text-emerald-400 w-5 h-5 animate-spin" style="animation-duration: 8s;"></i>
+                    <i data-lucide="radar" class="text-emerald-400 w-5 h-5"></i>
                     Scanner Espacial (Posi&ccedil;&atilde;o/&Acirc;ngulo)
                 </h2>
                 
@@ -260,7 +291,7 @@
                         <div class="radar-axis-x"></div>
                         <div class="radar-axis-y"></div>
                         
-                        <!-- Feixe de Varredura -->
+                        <!-- Feixe de Varredura (Giro controlado via JS) -->
                         <div class="radar-sweep" id="radar-sweep-beam"></div>
                         
                         <!-- Container para os blips dinâmicos -->
@@ -269,8 +300,8 @@
                 </div>
 
                 <div class="text-center text-xs text-slate-400 flex justify-between px-2 mt-2">
-                    <span>Alcance: <strong class="text-emerald-400 font-mono">100m</strong></span>
-                    <span>Sincronismo: <strong id="latency-text" class="text-blue-400 font-mono">0ms</strong></span>
+                    <span>Alcance do Radar: <strong class="text-emerald-400 font-mono">100m</strong></span>
+                    <span>Lat&ecirc;ncia: <strong id="latency-text" class="text-blue-400 font-mono">0ms</strong></span>
                 </div>
             </div>
 
@@ -278,7 +309,7 @@
             <div class="stat-card p-5 rounded-2xl flex-grow flex flex-col">
                 <h2 class="text-lg font-semibold flex items-center gap-2 mb-4">
                     <i data-lucide="list-collapse" class="text-slate-400 w-5 h-5"></i>
-                    &Uacute;ltimas Detec&ccedil;&otilde;es
+                    &Uacute;ltimas Dete&ccedil;&otilde;es (&lt; 95m)
                 </h2>
                 
                 <div class="overflow-y-auto max-h-[220px] pr-2 flex-grow">
@@ -297,15 +328,15 @@
                 </div>
             </div>
 
-            <!-- Painel de Informações da Nuvem -->
+            <!-- Painel de Informações P2P -->
             <div class="stat-card p-4 rounded-xl bg-slate-800/30 text-xs border border-slate-700/60 flex flex-col gap-2">
                 <div class="flex justify-between">
-                    <span class="text-slate-400">ID da Sess&atilde;o Local:</span>
-                    <span id="local-session-id" class="font-mono text-blue-300">...</span>
+                    <span class="text-slate-400">Canal de Comunicação:</span>
+                    <span id="local-webrtc-id" class="font-mono text-blue-300">LocalBroadcast</span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-slate-400">Transmissor Ativo:</span>
-                    <span id="broadcaster-id-text" class="font-mono text-emerald-400 truncate max-w-[150px]">Nenhum</span>
+                    <span class="text-slate-400">Status do Host:</span>
+                    <span id="broadcaster-id-text" class="font-mono text-emerald-400 truncate max-w-[150px]">Local</span>
                 </div>
             </div>
 
@@ -324,50 +355,31 @@
             </button>
         </div>
         <div id="serial-terminal" class="h-24 bg-black/50 rounded-lg p-2 font-mono text-xs text-slate-300 overflow-y-auto border border-slate-800 flex flex-col gap-0.5">
-            <span class="text-slate-500">[Sistema] Selecione o modo "Dispositivo USB (ESP32)" e clique em "Conectar ESP32" para monitorar e compartilhar dados f&iacute;sicos.</span>
+            <span class="text-slate-500">[Sistema] Selecione o modo "Dispositivo USB (ESP32)" e clique em "Conectar ESP32" para monitorar e partilhar dados f&iacute;sicos.</span>
         </div>
     </footer>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Inicializar ícones Lucide
+        // Inicializar ícones Lucide de forma imediata
         lucide.createIcons();
 
         // ---------------------------------------------------------
-        // Configurações do Firebase com Fallback Seguro
+        // Comunicação de Sincronização Local (BroadcastChannel)
         // ---------------------------------------------------------
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'telemetria-esp32-app';
-        const defaultFirebaseConfig = {
-            apiKey: "",
-            authDomain: "dummy.firebaseapp.com",
-            projectId: "dummy-project",
-            storageBucket: "dummy.appspot.com",
-            messagingSenderId: "123456",
-            appId: "1:123456:web:12345"
-        };
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
-
-        // Inicialização de Instâncias
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
+        let activeChannel = null;
+        let isBroadcasting = false;
+        
         // ---------------------------------------------------------
         // Configurações Globais e Variáveis de Estado
         // ---------------------------------------------------------
         const MAX_DATA_POINTS = 50; 
-        const UPDATE_INTERVAL = 1000; // 1 segundo (1Hz) para o loop do simulador
+        const UPDATE_INTERVAL = 1000; // 1Hz para amostragem
         
         let isSimulating = true;
         let simulationInterval;
         let radarAngle = 0; 
         let activeDataSource = 'simulation'; 
-        let shouldBroadcastSim = false; // Se o simulador deve enviar dados para a nuvem
-        let lastFirestoreWriteTime = 0;
-        const FIRESTORE_WRITE_THROTTLE = 1000; // Máximo 1 escrita por segundo para respeitar limites do Firestore
+        let shouldBroadcastSim = false; 
 
         // Controle da Conexão Web Serial API
         let serialPort = null;
@@ -378,9 +390,6 @@
         let tempHistory = [];
         let pressHistory = [];
         let objectsInRadar = [];
-
-        // Referência de desativação do listener da nuvem
-        let unsubscribeCloud = null;
 
         // ---------------------------------------------------------
         // Seleção de Elementos de Interface
@@ -394,13 +403,25 @@
         const simBroadcastCheckbox = document.getElementById('sim-broadcast-checkbox');
         
         // Elementos de Status
-        const cloudStatusIcon = document.getElementById('cloud-status-icon');
-        const cloudStatusText = document.getElementById('cloud-status-text');
-        const localSessionIdEl = document.getElementById('local-session-id');
+        const p2pStatusIcon = document.getElementById('p2p-status-icon');
+        const p2pStatusText = document.getElementById('p2p-status-text');
+        const localWebRtcIdEl = document.getElementById('local-webrtc-id');
         const broadcasterIdText = document.getElementById('broadcaster-id-text');
         const lagIndicator = document.getElementById('lag-indicator');
         const dataOriginText = document.getElementById('data-origin-text');
         const latencyText = document.getElementById('latency-text');
+        const p2pConnectedCountEl = document.getElementById('p2p-connected-count');
+
+        // Elementos do Painel P2P dedicado
+        const p2pPanel = document.getElementById('p2p-panel');
+        const p2pPanelTitle = document.getElementById('p2p-panel-title');
+        const p2pPanelDesc = document.getElementById('p2p-panel-desc');
+        const p2pHostArea = document.getElementById('p2p-host-area');
+        const p2pClientArea = document.getElementById('p2p-client-area');
+        const localPeerIdDisplay = document.getElementById('local-peer-id');
+        const copyPeerIdBtn = document.getElementById('copy-peer-id-btn');
+        const targetPeerIdInput = document.getElementById('target-peer-id-input');
+        const connectP2pBtn = document.getElementById('connect-p2p-btn');
 
         function logToTerminal(message, type = 'info') {
             const span = document.createElement('span');
@@ -427,155 +448,142 @@
         });
 
         // ---------------------------------------------------------
-        // Autenticação Silenciosa em Nuvem
+        // Gestão de Conectividade Local via BroadcastChannel
         // ---------------------------------------------------------
-        async function authenticateCloud() {
-            try {
-                // Se a API Key padrão for vazia, não tenta autenticar para evitar travar o console com erros de rede
-                if (!firebaseConfig.apiKey) {
-                    cloudStatusText.textContent = "Nuvem Local";
-                    cloudStatusIcon.setAttribute('class', "w-4 h-4 text-amber-500");
-                    logToTerminal("Nuvem rodando em modo sandbox offline. Conecte o banco real para sincronizar.", "warn");
-                    return;
-                }
+        
+        function destroyP2PInstance() {
+            if (activeChannel) {
+                try {
+                    activeChannel.close();
+                } catch(e) {}
+                activeChannel = null;
+            }
+            isBroadcasting = false;
+            p2pStatusText.textContent = "Offline";
+            p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-slate-500');
+            p2pConnectedCountEl.textContent = "0";
+            broadcasterIdText.textContent = "Local";
+        }
 
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                cloudStatusText.textContent = "Erro na Nuvem";
-                cloudStatusIcon.setAttribute('class', "w-4 h-4 text-red-500");
-                logToTerminal(`Erro de conex\u00e3o com servidor em nuvem: ${err.message}`, "error");
+        function setupP2PHost() {
+            destroyP2PInstance();
+            const channelId = localPeerIdDisplay.textContent.trim().toUpperCase();
+
+            logToTerminal(`A abrir canal de transmissão local: ${channelId}...`, "info");
+            
+            try {
+                activeChannel = new BroadcastChannel(channelId);
+                isBroadcasting = true;
+                
+                p2pStatusText.textContent = "A partilhar";
+                p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-emerald-400 animate-pulse');
+                p2pConnectedCountEl.textContent = "Ativo";
+                logToTerminal(`Canal local pronto! Ouvintes sincronizarão automaticamente.`, "success");
+            } catch (error) {
+                logToTerminal(`Erro ao abrir canal local: ${error.message}`, "error");
             }
         }
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                localSessionIdEl.textContent = user.uid.substring(0, 8) + "...";
-                cloudStatusText.textContent = "Nuvem Pronta";
-                cloudStatusIcon.setAttribute('class', "w-4 h-4 text-emerald-400");
-                logToTerminal(`Sess\u00e3o de nuvem ativa. ID: ${user.uid}`, "success");
-            } else {
-                if (firebaseConfig.apiKey) {
-                    cloudStatusText.textContent = "Desconectado";
-                    cloudStatusIcon.setAttribute('class', "w-4 h-4 text-slate-500");
-                }
-            }
-        });
+        function connectToP2PHost(hostRoomId) {
+            destroyP2PInstance();
+            const channelId = hostRoomId.trim().toUpperCase();
 
-        async function broadcastTelemetry(data) {
-            const user = auth.currentUser;
-            if (!user) return;
-
-            const now = Date.now();
-            // Aplica throttle para evitar limite de concorrência do Firestore
-            if (now - lastFirestoreWriteTime < FIRESTORE_WRITE_THROTTLE) return;
-            lastFirestoreWriteTime = now;
-
-            // Transmite apenas as detecções ativas da varredura atual para otimizar tamanho do pacote
-            const activeDetections = objectsInRadar.filter(obj => (now - obj.timestamp) < 3000);
-
-            // Documento compartilhado globalmente
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'telemetry', 'latest');
-            try {
-                await setDoc(docRef, {
-                    timestamp: data.timestamp,
-                    temperature: data.temperature,
-                    pressure: data.pressure,
-                    radarDetections: activeDetections.map(d => ({
-                        angle: d.angle,
-                        distance: d.distance,
-                        timestamp: d.timestamp
-                    })),
-                    broadcasterId: user.uid,
-                    updatedAt: now
-                });
-            } catch (err) {
-                console.error("Erro na transmissão da telemetria:", err);
-            }
-        }
-
-        function startListeningCloud() {
-            stopListeningCloud(); // Evita duplicações
-            const user = auth.currentUser;
-            if (!user && firebaseConfig.apiKey) {
-                logToTerminal("Aguardando inicializa\u00e7\u00e3o da nuvem...", "warn");
+            if (!channelId) {
+                logToTerminal("Por favor, introduza um ID v&aacute;lido de canal.", "warn");
                 return;
             }
 
-            logToTerminal("Iniciando escuta ativa da nuvem...", "info");
-            
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'telemetry', 'latest');
-            
+            logToTerminal(`A ligar ao canal de telemetria: ${channelId}...`, "info");
+            p2pStatusText.textContent = "A escutar...";
+            p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-amber-500 animate-pulse');
+
             try {
-                unsubscribeCloud = onSnapshot(docRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        const cloudData = docSnap.data();
-                        
-                        // Não processa novamente os próprios dados transmitidos por este dispositivo
-                        if (user && cloudData.broadcasterId === user.uid) {
-                            broadcasterIdText.textContent = `Voc\u00ea (${cloudData.broadcasterId.substring(0,6)})`;
-                            return; 
-                        }
+                activeChannel = new BroadcastChannel(channelId);
+                
+                activeChannel.onmessage = (event) => {
+                    const data = event.data;
+                    processIncomingData(data, false);
+                };
 
-                        broadcasterIdText.textContent = cloudData.broadcasterId.substring(0, 8) + "...";
-                        
-                        // Calcula a latência/delay da transmissão
-                        const lag = Date.now() - cloudData.updatedAt;
-                        latencyText.textContent = `${lag}ms`;
-
-                        // Alinha e importa os blips de radar remotos mantendo a idade correta no cliente local
-                        const adjustedDetections = (cloudData.radarDetections || []).map(det => {
-                            const ageOffset = cloudData.updatedAt - det.timestamp;
-                            return {
-                                angle: det.angle,
-                                distance: det.distance,
-                                timestamp: Date.now() - ageOffset
-                            };
-                        });
-
-                        // Insere as detecções remotas recebidas
-                        adjustedDetections.forEach(det => {
-                            // Verifica duplicidade no mesmo tempo aproximado
-                            const exists = objectsInRadar.some(existing => 
-                                Math.abs(existing.angle - det.angle) < 2 && 
-                                Math.abs(existing.distance - det.distance) < 2
-                            );
-                            if (!exists) {
-                                objectsInRadar.push(det);
-                                addDetectionToLog(det.angle, det.distance);
-                            }
-                        });
-
-                        // Constrói e processa os dados locais na UI
-                        const telemetryData = {
-                            timestamp: cloudData.timestamp,
-                            temperature: cloudData.temperature,
-                            pressure: cloudData.pressure,
-                            radarDetections: adjustedDetections
-                        };
-
-                        processIncomingData(telemetryData, false); // false = não retransmite
-                    }
-                }, (error) => {
-                    logToTerminal(`Erro de conex\u00e3o com os dados: ${error.message}`, "error");
-                });
-            } catch (err) {
-                logToTerminal(`Erro de inicializa\u00e7\u00e3o de snapshot da nuvem: ${err.message}`, "error");
+                p2pStatusText.textContent = "Sincronizado";
+                p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-emerald-400 animate-pulse');
+                p2pConnectedCountEl.textContent = "1";
+                broadcasterIdText.textContent = channelId;
+                logToTerminal(`Ligado com sucesso ao canal de telemetria: ${channelId}!`, "success");
+            } catch (error) {
+                logToTerminal(`Erro ao conectar ao canal: ${error.message}`, "error");
             }
         }
 
-        function stopListeningCloud() {
-            if (unsubscribeCloud) {
-                unsubscribeCloud();
-                unsubscribeCloud = null;
-            }
-            broadcasterIdText.textContent = "Nenhum";
-            latencyText.textContent = "0ms";
+        function broadcastDataP2P(data) {
+            if (!activeChannel || !isBroadcasting) return;
+
+            const packet = {
+                ...data,
+                broadcasterId: "Canal Local",
+                updatedAt: Date.now()
+            };
+
+            try {
+                activeChannel.postMessage(packet);
+            } catch(e) {}
         }
 
+        // Interações manuais P2P
+        copyPeerIdBtn.addEventListener('click', () => {
+            const idText = localPeerIdDisplay.textContent;
+            if (idText) {
+                const tempTextArea = document.createElement("textarea");
+                tempTextArea.value = idText;
+                document.body.appendChild(tempTextArea);
+                tempTextArea.select();
+                try {
+                    document.execCommand('copy');
+                    logToTerminal("ID do Canal copiado!", "success");
+                } catch (err) {
+                    logToTerminal("Copie manualmente: " + idText, "warn");
+                }
+                document.body.removeChild(tempTextArea);
+            }
+        });
+
+        connectP2pBtn.addEventListener('click', () => {
+            const targetId = targetPeerIdInput.value;
+            connectToP2PHost(targetId);
+        });
+
+        function updateP2PPanelUI() {
+            if (activeDataSource === 'simulation') {
+                p2pPanel.classList.remove('hidden');
+                p2pPanelTitle.textContent = "Modo Transmissor Ativo (Simulador)";
+                p2pPanelDesc.textContent = "Ative \"Transmitir P2P\" acima para abrir o canal local e partilhar.";
+                
+                if (shouldBroadcastSim) {
+                    p2pHostArea.classList.remove('hidden');
+                } else {
+                    p2pHostArea.classList.add('hidden');
+                }
+                p2pClientArea.classList.add('hidden');
+
+            } else if (activeDataSource === 'serial') {
+                p2pPanel.classList.remove('hidden');
+                p2pPanelTitle.textContent = "Modo Transmissor Ativo (ESP32 F\u00edsico)";
+                p2pPanelDesc.textContent = "Conecte o seu ESP32 via cabo USB. O ID gerado transmitir\u00e1 os dados de hardware.";
+                p2pHostArea.classList.remove('hidden');
+                p2pClientArea.classList.add('hidden');
+
+            } else if (activeDataSource === 'p2p-listener') {
+                p2pPanel.classList.remove('hidden');
+                p2pPanelTitle.textContent = "Modo Ouvinte P2P (Escuta)";
+                p2pPanelDesc.textContent = "Defina o canal de escuta abaixo para sincronizar a telemetria.";
+                p2pHostArea.classList.add('hidden');
+                p2pClientArea.classList.remove('hidden');
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Rotinas de Análises Estatísticas Amostrais (Média & Desvio Padrão)
+        // ---------------------------------------------------------
         const calcMean = (arr) => arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length;
         
         const calcStdDev = (arr, mean) => {
@@ -593,7 +601,9 @@
             document.getElementById(stdElementId).textContent = stdDev.toFixed(2);
         };
 
-        // Instanciação de Gráficos
+        // ---------------------------------------------------------
+        // Instanciação e Estilo dos Gráficos (Chart.js)
+        // ---------------------------------------------------------
         Chart.defaults.color = '#94a3b8';
         Chart.defaults.font.family = "'Inter', sans-serif";
         
@@ -679,9 +689,9 @@
 
         const blipsContainer = document.getElementById('blips-container');
         const detectionLog = document.getElementById('detection-log');
+        const sweepBeam = document.getElementById('radar-sweep-beam');
 
         function polarToCartesian(angleDegrees, distance) {
-            // Conversão trigonométrica ajustada para varredura de cima em sentido horário
             const angleRads = (angleDegrees - 90) * (Math.PI / 180);
             const r = (distance / 100) * 50; 
             const x = 50 + (r * Math.cos(angleRads));
@@ -700,9 +710,8 @@
                 blip.style.left = `${pos.x}%`;
                 blip.style.top = `${pos.y}%`;
                 
-                // Opacidade calculada pelo tempo residual
                 const age = now - obj.timestamp;
-                const maxAge = 4000; 
+                const maxAge = 2000; 
                 let opacity = 1 - (age / maxAge);
                 
                 if (opacity > 0) {
@@ -711,9 +720,7 @@
                 }
             });
 
-            // Retém apenas objetos escaneados nos últimos 4 segundos
-            objectsInRadar = objectsInRadar.filter(obj => (now - obj.timestamp) < 4000);
-            document.getElementById('obj-count').textContent = objectsInRadar.length;
+            objectsInRadar = objectsInRadar.filter(obj => (now - obj.timestamp) < 2000);
         }
 
         function visualLoop() {
@@ -741,12 +748,17 @@
             }
         }
 
+        // ---------------------------------------------------------
+        // Fluxo e Processamento de Dados de Entrada
+        // ---------------------------------------------------------
         function processIncomingData(data, shouldSync = true) {
-            // Atualiza tela principal
+            if (data.angle !== undefined && sweepBeam) {
+                sweepBeam.style.transform = `rotate(${data.angle - 90}deg)`;
+            }
+
             document.getElementById('current-temp').textContent = data.temperature.toFixed(1);
             document.getElementById('current-press').textContent = data.pressure.toFixed(1);
 
-            // Coleta dados históricos para cálculos amostrais
             tempHistory.push(data.temperature);
             pressHistory.push(data.pressure);
             
@@ -756,7 +768,6 @@
             updateStats(tempHistory, 'temp-mean', 'temp-std');
             updateStats(pressHistory, 'press-mean', 'press-std');
 
-            // Atualiza gráficos sem renderização de frames completos (otimização extrema)
             tempChart.data.labels.push(data.timestamp);
             tempChart.data.datasets[0].data.push(data.temperature);
             if (tempChart.data.labels.length > MAX_DATA_POINTS) {
@@ -773,12 +784,40 @@
             }
             pressChart.update('none');
 
-            // Se for transmissor e a sincronização estiver permitida, sobe para o banco compartilhado
+            if (data.radarDetections && data.radarDetections.length > 0) {
+                data.radarDetections.forEach(det => {
+                    if (det.distance > 2 && det.distance < 95) {
+                        const exists = objectsInRadar.some(existing => 
+                            Math.abs(existing.angle - det.angle) < 2 && 
+                            Math.abs(existing.distance - det.distance) < 2
+                        );
+                        if (!exists) {
+                            objectsInRadar.push({
+                                angle: det.angle,
+                                distance: det.distance,
+                                timestamp: Date.now()
+                            });
+                            addDetectionToLog(det.angle, det.distance);
+                        }
+                    }
+                });
+            }
+
+            if (data.updatedAt) {
+                const lag = Date.now() - data.updatedAt;
+                latencyText.textContent = `${lag}ms`;
+            } else {
+                latencyText.textContent = `0ms`;
+            }
+
             if (shouldSync && (activeDataSource === 'serial' || (activeDataSource === 'simulation' && shouldBroadcastSim))) {
-                broadcastTelemetry(data);
+                broadcastDataP2P(data);
             }
         }
 
+        // ---------------------------------------------------------
+        // Motor de Simulação Local Math Walk
+        // ---------------------------------------------------------
         let baseTemp = 25.0;
         let basePress = 1013.2;
 
@@ -791,17 +830,17 @@
             if(basePress > 1030) basePress -= 1;
             if(basePress < 1000) basePress += 1;
 
-            const timeLabel = new Date().toLocaleTimeString('pt-BR', { hour12: false, second: '2-digit', minute: '2-digit', hour: '2-digit' });
+            const timeLabel = new Date().toLocaleTimeString('pt-PT', { hour12: false, second: '2-digit', minute: '2-digit', hour: '2-digit' });
 
-            radarAngle = (radarAngle + 9) % 360; 
+            radarAngle = (radarAngle + 6) % 360; 
             
             let detectedObjects = [];
-            if (Math.random() < 0.12) {
-                const objAngle = radarAngle + (Math.random() * 15 - 7.5); 
-                const objDist = 15 + (Math.random() * 75); 
+            if (Math.random() < 0.15) {
+                const objAngle = radarAngle; 
+                const objDist = 15 + (Math.random() * 70); 
                 
                 const newObj = {
-                    angle: objAngle % 360,
+                    angle: objAngle,
                     distance: objDist,
                     timestamp: Date.now()
                 };
@@ -814,21 +853,25 @@
                 timestamp: timeLabel,
                 temperature: baseTemp,
                 pressure: basePress,
+                angle: radarAngle,
                 radarDetections: detectedObjects
             };
         }
 
+        // ---------------------------------------------------------
+        // Leitura Web Serial API para ESP32 Físico
+        // ---------------------------------------------------------
         async function readSerialStream() {
             const textDecoder = new TextDecoder();
             while (serialPort && serialPort.readable) {
                 try {
                     serialReader = serialPort.readable.getReader();
-                    logToTerminal("Porta serial detectada com sucesso. Recebendo dados...", "success");
+                    logToTerminal("Porta serial detetada com sucesso. A receber dados...", "success");
                     
                     while (true) {
                         const { value, done } = await serialReader.read();
                         if (done) {
-                            logToTerminal("Monitoramento encerrado.", "warn");
+                            logToTerminal("Monitoriza\u00e7\u00e3o encerrada.", "warn");
                             break;
                         }
                         
@@ -836,7 +879,7 @@
                         serialBuffer += textChunk;
                         
                         let lines = serialBuffer.split("\n");
-                        serialBuffer = lines.pop(); // Mantém dados incompletos no buffer
+                        serialBuffer = lines.pop(); 
                         
                         for (let line of lines) {
                             line = line.trim();
@@ -849,9 +892,12 @@
                                     const parsed = JSON.parse(line);
                                     let radarDetections = [];
                                     
-                                    if (parsed.angle !== undefined && parsed.dist !== undefined) {
+                                    if (parsed.angle !== undefined) {
                                         radarAngle = parsed.angle;
-                                        if (parsed.dist > 0 && parsed.dist < 100) {
+                                    }
+
+                                    if (parsed.angle !== undefined && parsed.dist !== undefined) {
+                                        if (parsed.dist > 2 && parsed.dist < 95) {
                                             const newObj = {
                                                 angle: parsed.angle,
                                                 distance: parsed.dist,
@@ -863,12 +909,13 @@
                                         }
                                     }
 
-                                    const timeLabel = new Date().toLocaleTimeString('pt-BR', { hour12: false, second: '2-digit', minute: '2-digit', hour: '2-digit' });
+                                    const timeLabel = new Date().toLocaleTimeString('pt-PT', { hour12: false, second: '2-digit', minute: '2-digit', hour: '2-digit' });
 
                                     const telemetryData = {
                                         timestamp: timeLabel,
                                         temperature: parsed.temp !== undefined ? parsed.temp : baseTemp,
                                         pressure: parsed.press !== undefined ? parsed.press : basePress,
+                                        angle: radarAngle,
                                         radarDetections: radarDetections
                                     };
 
@@ -892,12 +939,12 @@
 
         async function connectSerialDevice() {
             if (!("serial" in navigator)) {
-                logToTerminal("Esta p\u00e1gina n\u00e3o possui permiss\u00f5es ou suporte para Web Serial API no seu navegador.", "error");
+                logToTerminal("Este navegador n\u00e3o suporta Web Serial API.", "error");
                 return;
             }
 
             try {
-                logToTerminal("Aguardando sele\u00e7\u00e3o da porta USB para parear com o ESP32...", "info");
+                logToTerminal("A aguardar sele\u00e7\u00e3o da porta USB para emparelhar com o ESP32...", "info");
                 serialPort = await navigator.serial.requestPort();
                 await serialPort.open({ baudRate: 115200 });
                 
@@ -909,13 +956,13 @@
                 readSerialStream();
 
             } catch (err) {
-                logToTerminal(`Erro de pareamento com porta serial: ${err.message}`, "error");
+                logToTerminal(`Erro ao ligar \u00e0 porta USB: ${err.message}`, "error");
                 serialPort = null;
             }
         }
 
         async function disconnectSerialDevice() {
-            logToTerminal("Interrompendo transmiss\u00e3o f\u00edsica...", "info");
+            logToTerminal("A interromper transmiss\u00e3o f\u00edsica...", "info");
             
             if (serialReader) {
                 await serialReader.cancel();
@@ -929,7 +976,7 @@
             dataOriginText.textContent = 'Desconectado';
             connectSerialBtn.innerHTML = '<i data-lucide="usb" class="w-4 h-4"></i> Conectar ESP32';
             lucide.createIcons();
-            logToTerminal("ESP32 desconectado com sucesso.", "warn");
+            logToTerminal("ESP32 desconectado.", "warn");
         }
 
         function startSimulation() {
@@ -938,23 +985,25 @@
                 const newData = generateSimulatedData();
                 processIncomingData(newData);
             }, UPDATE_INTERVAL);
-            document.getElementById('radar-sweep-beam').style.animationPlayState = 'running';
         }
 
         function stopSimulation() {
             if (simulationInterval) clearInterval(simulationInterval);
-            document.getElementById('radar-sweep-beam').style.animationPlayState = 'paused';
         }
 
-        // Listener de fonte de dados principal
+        // ---------------------------------------------------------
+        // Handlers e Listeners da Interface Gráfica
+        // ---------------------------------------------------------
         dataSourceSelect.addEventListener('change', async (e) => {
             activeDataSource = e.target.value;
             stopSimulation();
-            stopListeningCloud();
+            destroyP2PInstance();
             
             if (serialPort) {
                 await disconnectSerialDevice();
             }
+
+            updateP2PPanelUI();
 
             if (activeDataSource === 'simulation') {
                 connectSerialBtn.classList.add('hidden');
@@ -966,7 +1015,11 @@
                 
                 lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse');
                 dataOriginText.textContent = 'Simulador';
-                logToTerminal("Controlador chaveado para Simulador Local.", "info");
+                logToTerminal("Chaveado para o simulador local.", "info");
+
+                if (shouldBroadcastSim) {
+                    setupP2PHost();
+                }
 
             } else if (activeDataSource === 'serial') {
                 isSimulating = false;
@@ -975,34 +1028,37 @@
                 simBroadcastContainer.classList.add('hidden');
                 
                 lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-slate-500');
-                dataOriginText.textContent = 'F&iacute;sica';
-                logToTerminal("Controlador chaveado para porta USB Serial. Aguardando conex\u00e3o...", "warn");
+                dataOriginText.textContent = 'ESP32 Real';
+                logToTerminal("Chaveado para porta USB Serial. Host P2P ativo.", "warn");
 
-            } else if (activeDataSource === 'cloud') {
+                setupP2PHost();
+
+            } else if (activeDataSource === 'p2p-listener') {
                 isSimulating = false;
                 connectSerialBtn.classList.add('hidden');
                 toggleSimBtn.classList.add('hidden');
                 simBroadcastContainer.classList.add('hidden');
                 
                 lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse');
-                dataOriginText.textContent = 'Nuvem';
+                dataOriginText.textContent = 'Canal P2P';
                 
-                startListeningCloud();
-                logToTerminal("Iniciando escuta ativa de telemetria na nuvem.", "info");
+                logToTerminal("Pronto para receber telemetria direta local.", "info");
             }
         });
 
-        // Configuração de transmissão de simulador
         simBroadcastCheckbox.addEventListener('change', (e) => {
             shouldBroadcastSim = e.target.checked;
+            updateP2PPanelUI();
+            
             if (shouldBroadcastSim) {
-                logToTerminal("Sua simula\u00e7\u00e3o local agora est\u00e1 sendo transmitida para a nuvem!", "success");
+                setupP2PHost();
+                logToTerminal("Transmiss\u00e3o P2P habilitada.", "success");
             } else {
-                logToTerminal("Transmiss\u00e3o do simulador pausada.", "info");
+                destroyP2PInstance();
+                logToTerminal("Partilha desativada e servidor P2P local encerrado.", "info");
             }
         });
 
-        // Conexão USB física
         connectSerialBtn.addEventListener('click', () => {
             if (serialPort) {
                 disconnectSerialDevice();
@@ -1011,7 +1067,6 @@
             }
         });
 
-        // Controle play/pause local
         toggleSimBtn.addEventListener('click', (e) => {
             isSimulating = !isSimulating;
             const btnText = document.getElementById('btn-text');
@@ -1027,23 +1082,13 @@
             }
         });
 
-        // Inicializador Global da Aplicação - Modificado para não bloquear
+        // Inicializador Global da Aplicação
         window.onload = () => {
-            // Garante inicialização gráfica imediata
             tempChart.update();
             pressChart.update();
-            
-            // Inicia o simulador prioritariamente
             startSimulation();
-            
-            // Tenta inicializar e autenticar serviços de nuvem de forma totalmente assíncrona
-            authenticateCloud().then(() => {
-                if (activeDataSource === 'cloud') {
-                    startListeningCloud();
-                }
-            }).catch(err => {
-                console.error("Nuvem indisponivel no momento, rodando modo offline sandbox", err);
-            });
+            updateP2PPanelUI();
+            logToTerminal("Dashboard P2P ativo e operacional.", "success");
         };
 
     </script>
