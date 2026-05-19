@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard de Telemetria em Tempo Real</title>
     
-    <!-- Tailwind CSS para estilização rápida e responsiva -->
+    <!-- Tailwind CSS para estilizaÃ§Ã£o rÃ¡pida e responsiva -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Chart.js para os gráficos de temperatura e pressão -->
+    <!-- Chart.js para os grÃ¡ficos de temperatura e pressÃ£o -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Lucide Icons para iconografia limpa -->
@@ -28,7 +28,7 @@
         #radar-container {
             position: relative;
             width: 100%;
-            padding-bottom: 100%; /* Mantém proporção 1:1 */
+            padding-bottom: 100%; /* MantÃ©m proporÃ§Ã£o 1:1 */
             border-radius: 50%;
             background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
             border: 2px solid #334155;
@@ -55,7 +55,7 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Círculos concêntricos do radar */
+        /* CÃ­rculos concÃªntricos do radar */
         .radar-grid {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -90,7 +90,7 @@
             z-index: 20;
         }
 
-        /* Estilo para os cards de estatísticas */
+        /* Estilo para os cards de estatÃ­sticas */
         .stat-card {
             background: rgba(30, 41, 59, 0.7); /* Slate 800 com opacidade */
             backdrop-filter: blur(10px);
@@ -122,22 +122,22 @@
                 </h1>
                 <p class="text-sm text-slate-400 flex items-center gap-1.5">
                     <span class="inline-block w-2 h-2 rounded-full bg-blue-500"></span> 
-                    Sincronização Multiusuário em Nuvem Ativa
+                    Sincroniza&ccedil;&atilde;o Multiusu&aacute;rio em Nuvem Ativa
                 </p>
             </div>
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
-            <!-- Conexão em Nuvem Status -->
+            <!-- ConexÃ£o em Nuvem Status -->
             <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-800/80 rounded-lg border border-slate-700 text-xs">
                 <i data-lucide="cloud" class="w-4 h-4 text-slate-400" id="cloud-status-icon"></i>
                 <span id="cloud-status-text" class="text-slate-400 font-medium">Autenticando...</span>
             </div>
 
-            <!-- Seleção de Fonte de Dados -->
+            <!-- SeleÃ§Ã£o de Fonte de Dados -->
             <select id="data-source-select" class="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-sm px-3 py-2 text-white outline-none cursor-pointer">
                 <option value="simulation">Simulador Local</option>
-                <option value="serial">Dispositivo USB (ESP32) ? Envia p/ Nuvem</option>
+                <option value="serial">Dispositivo USB (ESP32) &rarr; Envia p/ Nuvem</option>
                 <option value="cloud">Ouvinte da Nuvem (Recebe Telemetria)</option>
             </select>
 
@@ -160,31 +160,31 @@
         </div>
     </header>
 
-    <!-- Caixa de Dicas sobre a Sincronização -->
+    <!-- Caixa de Dicas sobre a SincronizaÃ§Ã£o -->
     <div class="bg-blue-950/40 border border-blue-900/50 p-3 rounded-xl flex items-start gap-3 text-sm text-blue-200">
         <i data-lucide="info" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
         <div>
-            <span class="font-semibold text-blue-300">Como testar a Sincronização Global:</span> 
-            Abra esta página em duas abas (ou dispositivos diferentes). Em uma delas, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Simulador Local</span> e marque a opção <span class="font-semibold">Transmitir Simulador</span>. Na outra aba, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Ouvinte da Nuvem</span>. Todos os gráficos e radares se moverão perfeitamente sincronizados!
+            <span class="font-semibold text-blue-300">Como testar a Sincroniza&ccedil;&atilde;o Global:</span> 
+            Abra esta p&aacute;gina em duas abas (ou dispositivos diferentes). Em uma delas, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Simulador Local</span> e marque a op&ccedil;&atilde;o <span class="font-semibold">Transmitir Simulador</span>. Na outra aba, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Ouvinte da Nuvem</span>. Todos os gr&aacute;ficos e radares se mover&atilde;o perfeitamente sincronizados!
         </div>
     </div>
 
     <main class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
         
-        <!-- Coluna Esquerda: Gráficos e Estatísticas -->
+        <!-- Coluna Esquerda: GrÃ¡ficos e EstatÃ­sticas -->
         <div class="lg:col-span-2 flex flex-col gap-6">
             
-            <!-- Linha de KPIs Rápidos -->
+            <!-- Linha de KPIs RÃ¡pidos -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="stat-card p-4 rounded-xl flex flex-col">
                     <span class="text-slate-400 text-xs uppercase tracking-wider mb-1">Temp Atual</span>
                     <div class="flex items-end gap-2">
                         <span id="current-temp" class="text-3xl font-bold text-white">0.0</span>
-                        <span class="text-slate-500 mb-1">°C</span>
+                        <span class="text-slate-500 mb-1">&deg;C</span>
                     </div>
                 </div>
                 <div class="stat-card p-4 rounded-xl flex flex-col">
-                    <span class="text-slate-400 text-xs uppercase tracking-wider mb-1">Pressão Atual</span>
+                    <span class="text-slate-400 text-xs uppercase tracking-wider mb-1">Press&atilde;o Atual</span>
                     <div class="flex items-end gap-2">
                         <span id="current-press" class="text-3xl font-bold text-white">0.0</span>
                         <span class="text-slate-500 mb-1">hPa</span>
@@ -209,11 +209,11 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold flex items-center gap-2">
                         <i data-lucide="thermometer" class="text-orange-400 w-5 h-5"></i>
-                        Histórico de Temperatura
+                        Hist&oacute;rico de Temperatura
                     </h2>
                     <div class="text-sm bg-slate-800/80 px-3 py-1 rounded-lg border border-slate-700 flex gap-4">
-                        <span title="Média">M: <span id="temp-mean" class="font-mono text-orange-300">0.0</span></span>
-                        <span title="Desvio Padrão">s: <span id="temp-std" class="font-mono text-orange-300">0.00</span></span>
+                        <span title="MÃ©dia">M: <span id="temp-mean" class="font-mono text-orange-300">0.0</span></span>
+                        <span title="Desvio PadrÃ£o">&sigma;: <span id="temp-std" class="font-mono text-orange-300">0.00</span></span>
                     </div>
                 </div>
                 <div class="relative flex-grow h-48 md:h-64 w-full">
@@ -225,11 +225,11 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold flex items-center gap-2">
                         <i data-lucide="gauge" class="text-purple-400 w-5 h-5"></i>
-                        Histórico de Pressão
+                        Hist&oacute;rico de Press&atilde;o
                     </h2>
                     <div class="text-sm bg-slate-800/80 px-3 py-1 rounded-lg border border-slate-700 flex gap-4">
-                        <span title="Média">M: <span id="press-mean" class="font-mono text-purple-300">0.0</span></span>
-                        <span title="Desvio Padrão">s: <span id="press-std" class="font-mono text-purple-300">0.00</span></span>
+                        <span title="MÃ©dia">M: <span id="press-mean" class="font-mono text-purple-300">0.0</span></span>
+                        <span title="Desvio PadrÃ£o">&sigma;: <span id="press-std" class="font-mono text-purple-300">0.00</span></span>
                     </div>
                 </div>
                 <div class="relative flex-grow h-48 md:h-64 w-full">
@@ -245,7 +245,7 @@
             <div class="stat-card p-5 rounded-2xl flex flex-col">
                 <h2 class="text-lg font-semibold flex items-center gap-2 mb-6">
                     <i data-lucide="radar" class="text-emerald-400 w-5 h-5 animate-spin" style="animation-duration: 8s;"></i>
-                    Scanner Espacial (Posição/Ângulo)
+                    Scanner Espacial (Posi&ccedil;&atilde;o/&Acirc;ngulo)
                 </h2>
                 
                 <div class="w-full max-w-[280px] mx-auto mb-4">
@@ -263,7 +263,7 @@
                         <!-- Feixe de Varredura -->
                         <div class="radar-sweep" id="radar-sweep-beam"></div>
                         
-                        <!-- Container para os blips dinâmicos -->
+                        <!-- Container para os blips dinÃ¢micos -->
                         <div id="blips-container"></div>
                     </div>
                 </div>
@@ -274,11 +274,11 @@
                 </div>
             </div>
 
-            <!-- Últimas Detecções -->
+            <!-- Ãšltimas DetecÃ§Ãµes -->
             <div class="stat-card p-5 rounded-2xl flex-grow flex flex-col">
                 <h2 class="text-lg font-semibold flex items-center gap-2 mb-4">
                     <i data-lucide="list-collapse" class="text-slate-400 w-5 h-5"></i>
-                    Últimas Detecções
+                    &Uacute;ltimas Detec&ccedil;&otilde;es
                 </h2>
                 
                 <div class="overflow-y-auto max-h-[220px] pr-2 flex-grow">
@@ -286,7 +286,7 @@
                         <thead class="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0">
                             <tr>
                                 <th class="px-3 py-2 rounded-tl-lg">Tempo</th>
-                                <th class="px-3 py-2">Ângulo (°)</th>
+                                <th class="px-3 py-2">&Acirc;ngulo (&deg;)</th>
                                 <th class="px-3 py-2 rounded-tr-lg">Dist. (m)</th>
                             </tr>
                         </thead>
@@ -297,10 +297,10 @@
                 </div>
             </div>
 
-            <!-- Painel de Informações da Nuvem -->
+            <!-- Painel de InformaÃ§Ãµes da Nuvem -->
             <div class="stat-card p-4 rounded-xl bg-slate-800/30 text-xs border border-slate-700/60 flex flex-col gap-2">
                 <div class="flex justify-between">
-                    <span class="text-slate-400">ID da Sessão Local:</span>
+                    <span class="text-slate-400">ID da Sess&atilde;o Local:</span>
                     <span id="local-session-id" class="font-mono text-blue-300">...</span>
                 </div>
                 <div class="flex justify-between">
@@ -312,7 +312,7 @@
         </div>
     </main>
 
-    <!-- Console Serial Inferior para Depuração física -->
+    <!-- Console Serial Inferior para DepuraÃ§Ã£o fÃ­sica -->
     <footer class="stat-card p-4 rounded-2xl border border-slate-700/50">
         <div class="flex justify-between items-center mb-2">
             <h3 class="text-sm font-semibold flex items-center gap-2 text-slate-300">
@@ -324,7 +324,7 @@
             </button>
         </div>
         <div id="serial-terminal" class="h-24 bg-black/50 rounded-lg p-2 font-mono text-xs text-slate-300 overflow-y-auto border border-slate-800 flex flex-col gap-0.5">
-            <span class="text-slate-500">[Sistema] Selecione o modo "Dispositivo USB (ESP32)" e clique em "Conectar ESP32" para monitorar e compartilhar dados físicos.</span>
+            <span class="text-slate-500">[Sistema] Selecione o modo "Dispositivo USB (ESP32)" e clique em "Conectar ESP32" para monitorar e compartilhar dados f&iacute;sicos.</span>
         </div>
     </footer>
 
@@ -333,11 +333,11 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Inicializar ícones Lucide
+        // Inicializar Ã­cones Lucide
         lucide.createIcons();
 
         // ---------------------------------------------------------
-        // Configurações do Firebase com Fallback Seguro
+        // ConfiguraÃ§Ãµes do Firebase com Fallback Seguro
         // ---------------------------------------------------------
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'telemetria-esp32-app';
         const defaultFirebaseConfig = {
@@ -350,13 +350,13 @@
         };
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
 
-        // Inicialização de Instâncias
+        // InicializaÃ§Ã£o de InstÃ¢ncias
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
         // ---------------------------------------------------------
-        // Configurações Globais e Variáveis de Estado
+        // ConfiguraÃ§Ãµes Globais e VariÃ¡veis de Estado
         // ---------------------------------------------------------
         const MAX_DATA_POINTS = 50; 
         const UPDATE_INTERVAL = 1000; // 1 segundo (1Hz) para o loop do simulador
@@ -367,23 +367,23 @@
         let activeDataSource = 'simulation'; 
         let shouldBroadcastSim = false; // Se o simulador deve enviar dados para a nuvem
         let lastFirestoreWriteTime = 0;
-        const FIRESTORE_WRITE_THROTTLE = 1000; // Máximo 1 escrita por segundo para respeitar limites do Firestore
+        const FIRESTORE_WRITE_THROTTLE = 1000; // MÃ¡ximo 1 escrita por segundo para respeitar limites do Firestore
 
-        // Controle da Conexão Web Serial API
+        // Controle da ConexÃ£o Web Serial API
         let serialPort = null;
         let serialReader = null;
         let serialBuffer = "";
 
-        // Arrays de Estatísticas
+        // Arrays de EstatÃ­sticas
         let tempHistory = [];
         let pressHistory = [];
         let objectsInRadar = [];
 
-        // Referência de desativação do listener da nuvem
+        // ReferÃªncia de desativaÃ§Ã£o do listener da nuvem
         let unsubscribeCloud = null;
 
         // ---------------------------------------------------------
-        // Seleção de Elementos de Interface
+        // SeleÃ§Ã£o de Elementos de Interface
         // ---------------------------------------------------------
         const dataSourceSelect = document.getElementById('data-source-select');
         const connectSerialBtn = document.getElementById('connect-serial-btn');
@@ -427,10 +427,18 @@
         });
 
         // ---------------------------------------------------------
-        // Autenticação Silenciosa em Nuvem
+        // AutenticaÃ§Ã£o Silenciosa em Nuvem
         // ---------------------------------------------------------
         async function authenticateCloud() {
             try {
+                // Se a API Key padrÃ£o for vazia, nÃ£o tenta autenticar para evitar travar o console com erros de rede
+                if (!firebaseConfig.apiKey) {
+                    cloudStatusText.textContent = "Nuvem Local";
+                    cloudStatusIcon.setAttribute('class', "w-4 h-4 text-amber-500");
+                    logToTerminal("Nuvem rodando em modo sandbox offline. Conecte o banco real para sincronizar.", "warn");
+                    return;
+                }
+
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
@@ -439,7 +447,7 @@
             } catch (err) {
                 cloudStatusText.textContent = "Erro na Nuvem";
                 cloudStatusIcon.setAttribute('class', "w-4 h-4 text-red-500");
-                logToTerminal(`Erro de conexão com servidor em nuvem: ${err.message}`, "error");
+                logToTerminal(`Erro de conex\u00e3o com servidor em nuvem: ${err.message}`, "error");
             }
         }
 
@@ -448,10 +456,12 @@
                 localSessionIdEl.textContent = user.uid.substring(0, 8) + "...";
                 cloudStatusText.textContent = "Nuvem Pronta";
                 cloudStatusIcon.setAttribute('class', "w-4 h-4 text-emerald-400");
-                logToTerminal(`Sessão de nuvem ativa. ID: ${user.uid}`, "success");
+                logToTerminal(`Sess\u00e3o de nuvem ativa. ID: ${user.uid}`, "success");
             } else {
-                cloudStatusText.textContent = "Desconectado";
-                cloudStatusIcon.setAttribute('class', "w-4 h-4 text-slate-500");
+                if (firebaseConfig.apiKey) {
+                    cloudStatusText.textContent = "Desconectado";
+                    cloudStatusIcon.setAttribute('class', "w-4 h-4 text-slate-500");
+                }
             }
         });
 
@@ -460,11 +470,11 @@
             if (!user) return;
 
             const now = Date.now();
-            // Aplica throttle para evitar limite de concorrência do Firestore
+            // Aplica throttle para evitar limite de concorrÃªncia do Firestore
             if (now - lastFirestoreWriteTime < FIRESTORE_WRITE_THROTTLE) return;
             lastFirestoreWriteTime = now;
 
-            // Transmite apenas as detecções ativas da varredura atual para otimizar tamanho do pacote
+            // Transmite apenas as detecÃ§Ãµes ativas da varredura atual para otimizar tamanho do pacote
             const activeDetections = objectsInRadar.filter(obj => (now - obj.timestamp) < 3000);
 
             // Documento compartilhado globalmente
@@ -483,15 +493,15 @@
                     updatedAt: now
                 });
             } catch (err) {
-                console.error("Erro na transmissão da telemetria:", err);
+                console.error("Erro na transmissÃ£o da telemetria:", err);
             }
         }
 
         function startListeningCloud() {
-            stopListeningCloud(); // Evita duplicações
+            stopListeningCloud(); // Evita duplicaÃ§Ãµes
             const user = auth.currentUser;
-            if (!user) {
-                logToTerminal("Aguardando inicialização da nuvem...", "warn");
+            if (!user && firebaseConfig.apiKey) {
+                logToTerminal("Aguardando inicializa\u00e7\u00e3o da nuvem...", "warn");
                 return;
             }
 
@@ -499,58 +509,62 @@
             
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'telemetry', 'latest');
             
-            unsubscribeCloud = onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const cloudData = docSnap.data();
-                    
-                    // Não processa novamente os próprios dados transmitidos por este dispositivo
-                    if (cloudData.broadcasterId === user.uid) {
-                        broadcasterIdText.textContent = `Você (${cloudData.broadcasterId.substring(0,6)})`;
-                        return; 
-                    }
-
-                    broadcasterIdText.textContent = cloudData.broadcasterId.substring(0, 8) + "...";
-                    
-                    // Calcula a latência/delay da transmissão
-                    const lag = Date.now() - cloudData.updatedAt;
-                    latencyText.textContent = `${lag}ms`;
-
-                    // Alinha e importa os blips de radar remotos mantendo a idade correta no cliente local
-                    const adjustedDetections = (cloudData.radarDetections || []).map(det => {
-                        const ageOffset = cloudData.updatedAt - det.timestamp;
-                        return {
-                            angle: det.angle,
-                            distance: det.distance,
-                            timestamp: Date.now() - ageOffset
-                        };
-                    });
-
-                    // Insere as detecções remotas recebidas
-                    adjustedDetections.forEach(det => {
-                        // Verifica duplicidade no mesmo tempo aproximado
-                        const exists = objectsInRadar.some(existing => 
-                            Math.abs(existing.angle - det.angle) < 2 && 
-                            Math.abs(existing.distance - det.distance) < 2
-                        );
-                        if (!exists) {
-                            objectsInRadar.push(det);
-                            addDetectionToLog(det.angle, det.distance);
+            try {
+                unsubscribeCloud = onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const cloudData = docSnap.data();
+                        
+                        // NÃ£o processa novamente os prÃ³prios dados transmitidos por este dispositivo
+                        if (user && cloudData.broadcasterId === user.uid) {
+                            broadcasterIdText.textContent = `Voc\u00ea (${cloudData.broadcasterId.substring(0,6)})`;
+                            return; 
                         }
-                    });
 
-                    // Constrói e processa os dados locais na UI
-                    const telemetryData = {
-                        timestamp: cloudData.timestamp,
-                        temperature: cloudData.temperature,
-                        pressure: cloudData.pressure,
-                        radarDetections: adjustedDetections
-                    };
+                        broadcasterIdText.textContent = cloudData.broadcasterId.substring(0, 8) + "...";
+                        
+                        // Calcula a latÃªncia/delay da transmissÃ£o
+                        const lag = Date.now() - cloudData.updatedAt;
+                        latencyText.textContent = `${lag}ms`;
 
-                    processIncomingData(telemetryData, false); // false = não retransmite
-                }
-            }, (error) => {
-                logToTerminal(`Erro de conexão com os dados: ${error.message}`, "error");
-            });
+                        // Alinha e importa os blips de radar remotos mantendo a idade correta no cliente local
+                        const adjustedDetections = (cloudData.radarDetections || []).map(det => {
+                            const ageOffset = cloudData.updatedAt - det.timestamp;
+                            return {
+                                angle: det.angle,
+                                distance: det.distance,
+                                timestamp: Date.now() - ageOffset
+                            };
+                        });
+
+                        // Insere as detecÃ§Ãµes remotas recebidas
+                        adjustedDetections.forEach(det => {
+                            // Verifica duplicidade no mesmo tempo aproximado
+                            const exists = objectsInRadar.some(existing => 
+                                Math.abs(existing.angle - det.angle) < 2 && 
+                                Math.abs(existing.distance - det.distance) < 2
+                            );
+                            if (!exists) {
+                                objectsInRadar.push(det);
+                                addDetectionToLog(det.angle, det.distance);
+                            }
+                        });
+
+                        // ConstrÃ³i e processa os dados locais na UI
+                        const telemetryData = {
+                            timestamp: cloudData.timestamp,
+                            temperature: cloudData.temperature,
+                            pressure: cloudData.pressure,
+                            radarDetections: adjustedDetections
+                        };
+
+                        processIncomingData(telemetryData, false); // false = nÃ£o retransmite
+                    }
+                }, (error) => {
+                    logToTerminal(`Erro de conex\u00e3o com os dados: ${error.message}`, "error");
+                });
+            } catch (err) {
+                logToTerminal(`Erro de inicializa\u00e7\u00e3o de snapshot da nuvem: ${err.message}`, "error");
+            }
         }
 
         function stopListeningCloud() {
@@ -579,7 +593,7 @@
             document.getElementById(stdElementId).textContent = stdDev.toFixed(2);
         };
 
-        // Instanciação de Gráficos
+        // InstanciaÃ§Ã£o de GrÃ¡ficos
         Chart.defaults.color = '#94a3b8';
         Chart.defaults.font.family = "'Inter', sans-serif";
         
@@ -623,7 +637,7 @@
             data: {
                 labels: Array(MAX_DATA_POINTS).fill(''),
                 datasets: [{
-                    label: 'Temperatura (°C)',
+                    label: 'Temperatura (\u00b0C)',
                     data: Array(MAX_DATA_POINTS).fill(null),
                     borderColor: '#fb923c', 
                     backgroundColor: tempGradient,
@@ -648,7 +662,7 @@
             data: {
                 labels: Array(MAX_DATA_POINTS).fill(''),
                 datasets: [{
-                    label: 'Pressão (hPa)',
+                    label: 'Press\u00e3o (hPa)',
                     data: Array(MAX_DATA_POINTS).fill(null),
                     borderColor: '#c084fc', 
                     backgroundColor: pressGradient,
@@ -667,7 +681,7 @@
         const detectionLog = document.getElementById('detection-log');
 
         function polarToCartesian(angleDegrees, distance) {
-            // Conversão trigonométrica ajustada para varredura de cima em sentido horário
+            // ConversÃ£o trigonomÃ©trica ajustada para varredura de cima em sentido horÃ¡rio
             const angleRads = (angleDegrees - 90) * (Math.PI / 180);
             const r = (distance / 100) * 50; 
             const x = 50 + (r * Math.cos(angleRads));
@@ -697,7 +711,7 @@
                 }
             });
 
-            // Retém apenas objetos escaneados nos últimos 4 segundos
+            // RetÃ©m apenas objetos escaneados nos Ãºltimos 4 segundos
             objectsInRadar = objectsInRadar.filter(obj => (now - obj.timestamp) < 4000);
             document.getElementById('obj-count').textContent = objectsInRadar.length;
         }
@@ -732,7 +746,7 @@
             document.getElementById('current-temp').textContent = data.temperature.toFixed(1);
             document.getElementById('current-press').textContent = data.pressure.toFixed(1);
 
-            // Coleta dados históricos para cálculos amostrais
+            // Coleta dados histÃ³ricos para cÃ¡lculos amostrais
             tempHistory.push(data.temperature);
             pressHistory.push(data.pressure);
             
@@ -742,7 +756,7 @@
             updateStats(tempHistory, 'temp-mean', 'temp-std');
             updateStats(pressHistory, 'press-mean', 'press-std');
 
-            // Atualiza gráficos sem renderização de frames completos (otimização extrema)
+            // Atualiza grÃ¡ficos sem renderizaÃ§Ã£o de frames completos (otimizaÃ§Ã£o extrema)
             tempChart.data.labels.push(data.timestamp);
             tempChart.data.datasets[0].data.push(data.temperature);
             if (tempChart.data.labels.length > MAX_DATA_POINTS) {
@@ -759,7 +773,7 @@
             }
             pressChart.update('none');
 
-            // Se for transmissor e a sincronização estiver permitida, sobe para o banco compartilhado
+            // Se for transmissor e a sincronizaÃ§Ã£o estiver permitida, sobe para o banco compartilhado
             if (shouldSync && (activeDataSource === 'serial' || (activeDataSource === 'simulation' && shouldBroadcastSim))) {
                 broadcastTelemetry(data);
             }
@@ -779,10 +793,10 @@
 
             const timeLabel = new Date().toLocaleTimeString('pt-BR', { hour12: false, second: '2-digit', minute: '2-digit', hour: '2-digit' });
 
-            radarAngle = (radarAngle + 90) % 360; 
+            radarAngle = (radarAngle + 9) % 360; 
             
             let detectedObjects = [];
-            if (Math.random() < 0.25) {
+            if (Math.random() < 0.12) {
                 const objAngle = radarAngle + (Math.random() * 15 - 7.5); 
                 const objDist = 15 + (Math.random() * 75); 
                 
@@ -822,7 +836,7 @@
                         serialBuffer += textChunk;
                         
                         let lines = serialBuffer.split("\n");
-                        serialBuffer = lines.pop(); // Mantém dados incompletos no buffer
+                        serialBuffer = lines.pop(); // MantÃ©m dados incompletos no buffer
                         
                         for (let line of lines) {
                             line = line.trim();
@@ -867,7 +881,7 @@
                         }
                     }
                 } catch (err) {
-                    logToTerminal(`Ocorreu um erro na transmissão de dados: ${err.message}`, 'error');
+                    logToTerminal(`Ocorreu um erro na transmiss\u00e3o de dados: ${err.message}`, 'error');
                 } finally {
                     if (serialReader) {
                         serialReader.releaseLock();
@@ -878,12 +892,12 @@
 
         async function connectSerialDevice() {
             if (!("serial" in navigator)) {
-                logToTerminal("Esta página não possui permissões ou suporte para Web Serial API no seu navegador.", "error");
+                logToTerminal("Esta p\u00e1gina n\u00e3o possui permiss\u00f5es ou suporte para Web Serial API no seu navegador.", "error");
                 return;
             }
 
             try {
-                logToTerminal("Aguardando seleção da porta USB para parear com o ESP32...", "info");
+                logToTerminal("Aguardando sele\u00e7\u00e3o da porta USB para parear com o ESP32...", "info");
                 serialPort = await navigator.serial.requestPort();
                 await serialPort.open({ baudRate: 115200 });
                 
@@ -901,7 +915,7 @@
         }
 
         async function disconnectSerialDevice() {
-            logToTerminal("Interrompendo transmissão física...", "info");
+            logToTerminal("Interrompendo transmiss\u00e3o f\u00edsica...", "info");
             
             if (serialReader) {
                 await serialReader.cancel();
@@ -919,6 +933,7 @@
         }
 
         function startSimulation() {
+            if (simulationInterval) clearInterval(simulationInterval);
             simulationInterval = setInterval(() => {
                 const newData = generateSimulatedData();
                 processIncomingData(newData);
@@ -927,7 +942,7 @@
         }
 
         function stopSimulation() {
-            clearInterval(simulationInterval);
+            if (simulationInterval) clearInterval(simulationInterval);
             document.getElementById('radar-sweep-beam').style.animationPlayState = 'paused';
         }
 
@@ -960,8 +975,8 @@
                 simBroadcastContainer.classList.add('hidden');
                 
                 lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-slate-500');
-                dataOriginText.textContent = 'Física';
-                logToTerminal("Controlador chaveado para porta USB Serial. Aguardando conexão...", "warn");
+                dataOriginText.textContent = 'F&iacute;sica';
+                logToTerminal("Controlador chaveado para porta USB Serial. Aguardando conex\u00e3o...", "warn");
 
             } else if (activeDataSource === 'cloud') {
                 isSimulating = false;
@@ -977,17 +992,17 @@
             }
         });
 
-        // Configuração de transmissão de simulador
+        // ConfiguraÃ§Ã£o de transmissÃ£o de simulador
         simBroadcastCheckbox.addEventListener('change', (e) => {
             shouldBroadcastSim = e.target.checked;
             if (shouldBroadcastSim) {
-                logToTerminal("Sua simulação local agora está sendo transmitida para a nuvem!", "success");
+                logToTerminal("Sua simula\u00e7\u00e3o local agora est\u00e1 sendo transmitida para a nuvem!", "success");
             } else {
-                logToTerminal("Transmissão do simulador pausada.", "info");
+                logToTerminal("Transmiss\u00e3o do simulador pausada.", "info");
             }
         });
 
-        // Conexão USB física
+        // ConexÃ£o USB fÃ­sica
         connectSerialBtn.addEventListener('click', () => {
             if (serialPort) {
                 disconnectSerialDevice();
@@ -1012,12 +1027,23 @@
             }
         });
 
-        // Inicializador Global da Aplicação
-        window.onload = async () => {
+        // Inicializador Global da AplicaÃ§Ã£o - Modificado para nÃ£o bloquear
+        window.onload = () => {
+            // Garante inicializaÃ§Ã£o grÃ¡fica imediata
             tempChart.update();
             pressChart.update();
-            await authenticateCloud();
+            
+            // Inicia o simulador prioritariamente
             startSimulation();
+            
+            // Tenta inicializar e autenticar serviÃ§os de nuvem de forma totalmente assÃ­ncrona
+            authenticateCloud().then(() => {
+                if (activeDataSource === 'cloud') {
+                    startListeningCloud();
+                }
+            }).catch(err => {
+                console.error("Nuvem indisponivel no momento, rodando modo offline sandbox", err);
+            });
         };
 
     </script>
