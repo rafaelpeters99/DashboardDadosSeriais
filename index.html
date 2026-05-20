@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Telemetria em Tempo Real - P2P</title>
+    <title>Dashboard de Telemetria em Tempo Real - P2P H&iacute;brido</title>
     
     <!-- Tailwind CSS para estilização rápida e responsiva -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,6 +13,9 @@
     
     <!-- Lucide Icons para iconografia limpa -->
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Biblioteca PeerJS para P2P WebRTC real entre dispositivos -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
     <!-- Fonte Inter para um visual moderno -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap" rel="stylesheet">
@@ -107,8 +110,85 @@
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
-<body class="min-h-screen p-4 md:p-6 lg:p-8 flex flex-col gap-6">
+<body class="min-h-screen p-4 md:p-6 lg:p-8 flex flex-col gap-6 relative">
 
+    <!-- Tela Inicial de Boas-Vindas / Seleção de Modo (Overlay) -->
+    <div id="welcome-screen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center p-4 backdrop-blur-lg overflow-y-auto">
+        <div class="max-w-4xl w-full text-center flex flex-col gap-8 md:gap-12 py-8">
+            
+            <!-- Título e Subtítulo -->
+            <div class="flex flex-col items-center">
+                <div class="inline-flex p-4 bg-blue-500/10 rounded-3xl mb-6 border border-blue-500/20 shadow-lg shadow-blue-500/5">
+                    <i data-lucide="activity" class="w-14 h-14 text-blue-400 animate-pulse"></i>
+                </div>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400 tracking-tight">
+                    Plataforma de Telemetria
+                </h1>
+                <p class="text-slate-400 mt-3 text-base md:text-lg max-w-xl mx-auto leading-relaxed">
+                    Escolha uma das op&ccedil;&otilde;es abaixo para aceder ao monitoramento de temperatura, press&atilde;o e varredura de radar em tempo real.
+                </p>
+            </div>
+
+            <!-- Grid de Opções -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                
+                <!-- Opção 1: Simulador -->
+                <button id="welcome-select-sim" class="stat-card p-6 rounded-2xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/40 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col gap-4 group">
+                    <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl group-hover:scale-110 transition-transform duration-300 w-fit">
+                        <i data-lucide="cpu" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-white mb-2">Simulador Local</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Inicia uma simula&ccedil;&atilde;o matem&aacute;tica de dados din&acirc;micos e eco-varreduras. Perfeito para demonstra&ccedil;&otilde;es e testes da interface sem hardware conectado.
+                        </p>
+                    </div>
+                    <div class="mt-auto pt-2 text-xs font-semibold text-blue-400 group-hover:translate-x-1 transition-transform flex items-center gap-1.5">
+                        Iniciar Simulador <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </div>
+                </button>
+
+                <!-- Opção 2: ESP32 Serial -->
+                <button id="welcome-select-serial" class="stat-card p-6 rounded-2xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/40 hover:border-emerald-500 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300 flex flex-col gap-4 group">
+                    <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl group-hover:scale-110 transition-transform duration-300 w-fit">
+                        <i data-lucide="usb" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-white mb-2">Dispositivo USB (ESP32)</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Liga&ccedil;&atilde;o f&iacute;sica de alta velocidade direta ao microcontrolador ESP32 via Web Serial. Configure sua porta e transmita os dados reais dos sensores para a tela.
+                        </p>
+                    </div>
+                    <div class="mt-auto pt-2 text-xs font-semibold text-emerald-400 group-hover:translate-x-1 transition-transform flex items-center gap-1.5">
+                        Conectar via Cabo <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </div>
+                </button>
+
+                <!-- Opção 3: Ouvinte P2P -->
+                <button id="welcome-select-p2p" class="stat-card p-6 rounded-2xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/40 hover:border-purple-500 hover:shadow-xl hover:shadow-purple-500/5 transition-all duration-300 flex flex-col gap-4 group">
+                    <div class="p-3 bg-purple-500/10 text-purple-400 rounded-xl group-hover:scale-110 transition-transform duration-300 w-fit">
+                        <i data-lucide="users" class="w-8 h-8"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-white mb-2">Ouvinte P2P</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Espelha telemetrias remotas de outro computador parceiro através de canais de dados de baixa lat&ecirc;ncia. Ideal para monitoramento compartilhado e centralizado.
+                        </p>
+                    </div>
+                    <div class="mt-auto pt-2 text-xs font-semibold text-purple-400 group-hover:translate-x-1 transition-transform flex items-center gap-1.5">
+                        Escutar Canal P2P <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Rodapé de Versão -->
+            <div class="text-xs text-slate-600">
+                <span>Vers&atilde;o 3.0 (Tecnologia Hybrid P2P WebRTC) &bull; Processamento em Tempo Real</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Layout Principal do Painel -->
     <header class="flex flex-col md:flex-row justify-between items-center bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 backdrop-blur-sm gap-4">
         <div class="flex items-center gap-3">
             <div class="p-2 bg-blue-500/20 rounded-lg">
@@ -166,7 +246,7 @@
             </div>
             <div>
                 <span id="p2p-panel-title" class="font-semibold text-slate-200 block">Modo Transmissor Ativo</span>
-                <span id="p2p-panel-desc" class="text-xs text-slate-400">Ative "Transmitir P2P" ou conecte o ESP32 para gerar o ID da sua Sala.</span>
+                <span id="p2p-panel-desc" class="text-xs text-slate-400 font-medium">Ative "Transmitir P2P" ou conecte o ESP32 para gerar o ID da sua Sala.</span>
             </div>
         </div>
         
@@ -174,8 +254,8 @@
         <div class="flex items-center gap-2 w-full md:w-auto">
             <!-- Caso Host -->
             <div id="p2p-host-area" class="hidden flex items-center gap-2 bg-slate-900/80 border border-slate-700 px-3 py-2 rounded-lg text-sm w-full md:w-auto justify-between">
-                <span class="text-slate-400 text-xs mr-1">ID da sua Sala:</span>
-                <span id="local-peer-id" class="font-mono font-bold text-emerald-400 px-2 tracking-wider">CANAL-TELEMETRIA</span>
+                <span class="text-slate-400 text-xs mr-1">ID da sua Sala P2P:</span>
+                <span id="local-peer-id" class="font-mono font-bold text-emerald-400 px-2 tracking-wider">A obter ID...</span>
                 <button id="copy-peer-id-btn" class="text-slate-400 hover:text-white transition-colors ml-1" title="Copiar ID">
                     <i data-lucide="copy" class="w-4 h-4"></i>
                 </button>
@@ -183,9 +263,9 @@
 
             <!-- Caso Ouvinte -->
             <div id="p2p-client-area" class="hidden flex items-center gap-2 w-full">
-                <input type="text" id="target-peer-id-input" value="CANAL-TELEMETRIA" placeholder="Insira o ID da Sala P2P..." class="bg-slate-900 border border-slate-700 rounded-lg text-sm px-3 py-2 text-white outline-none focus:border-blue-500 w-full md:w-64 tracking-wider uppercase font-mono">
+                <input type="text" id="target-peer-id-input" placeholder="Insira o ID da Sala P2P..." class="bg-slate-900 border border-slate-700 rounded-lg text-sm px-3 py-2 text-white outline-none focus:border-blue-500 w-full md:w-64 tracking-wider uppercase font-mono">
                 <button id="connect-p2p-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors shrink-0">
-                    Ligar &agrave; Sala
+                    Ligar &agrave; Sala P2P
                 </button>
             </div>
         </div>
@@ -195,8 +275,8 @@
     <div class="bg-blue-950/40 border border-blue-900/50 p-3 rounded-xl flex items-start gap-3 text-sm text-blue-200">
         <i data-lucide="info" class="w-5 h-5 text-blue-400 shrink-0 mt-0.5"></i>
         <div>
-            <span class="font-semibold text-blue-300">Como testar a Sincroniza&ccedil;&atilde;o Direta P2P (Broadcast Local):</span> 
-            Abra esta p&aacute;gina em dois separadores. No primeiro, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Simulador Local</span> e marque a op&ccedil;&atilde;o <span class="font-semibold">Transmitir P2P</span>. No segundo separador, selecione <span class="font-mono bg-blue-900/40 px-1 py-0.5 rounded text-white">Ouvinte P2P</span> e clique em "Ligar &agrave; Sala" (o canal padrão é <span class="font-mono text-emerald-300">CANAL-TELEMETRIA</span>). A transmissão funcionará instantaneamente sem erros de conexão!
+            <span class="font-semibold text-blue-300">Como testar a Sincroniza&ccedil;&atilde;o H&iacute;brida:</span> 
+            Se estiver a testar no <strong>mesmo computador</strong> (duas abas), o sistema sincroniza localmente na hora. Se estiver hospedado e testar de <strong>dispositivos diferentes</strong>, o sistema utilizar&aacute; conex&otilde;es WebRTC criptografadas de alta velocidade diretamente pela internet. Copie o ID gerado na sala transmissora e introduza-o na aba ouvinte!
         </div>
     </div>
 
@@ -275,7 +355,7 @@
             <!-- Painel do Radar Espacial -->
             <div class="stat-card p-5 rounded-2xl flex flex-col">
                 <h2 class="text-lg font-semibold flex items-center gap-2 mb-6">
-                    <i data-lucide="radar" class="text-emerald-400 w-5 h-5"></i>
+                    <i data-lucide="radar" class="text-emerald-400 w-5 h-5 animate-pulse"></i>
                     Scanner Espacial (Posi&ccedil;&atilde;o/&Acirc;ngulo)
                 </h2>
                 
@@ -331,8 +411,8 @@
             <!-- Painel de Informações P2P -->
             <div class="stat-card p-4 rounded-xl bg-slate-800/30 text-xs border border-slate-700/60 flex flex-col gap-2">
                 <div class="flex justify-between">
-                    <span class="text-slate-400">Canal de Comunicação:</span>
-                    <span id="local-webrtc-id" class="font-mono text-blue-300">LocalBroadcast</span>
+                    <span class="text-slate-400">Motor de Conectividade:</span>
+                    <span id="p2p-engine-text" class="font-mono text-blue-300">H&iacute;brido</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-slate-400">Status do Host:</span>
@@ -364,10 +444,13 @@
         lucide.createIcons();
 
         // ---------------------------------------------------------
-        // Comunicação de Sincronização Local (BroadcastChannel)
+        // Comunicação P2P Híbrida (WebRTC PeerJS + Local Broadcast)
         // ---------------------------------------------------------
-        let activeChannel = null;
-        let isBroadcasting = false;
+        let peerInstance = null;         // Conexão WebRTC P2P
+        let peerConnections = [];        // Conexões de dados de áudio/video/texto
+        let activePeerConnection = null; // Conexão ativa com o transmissor
+        let broadcastChannel = null;     // Canal de redundância local (mesmo browser)
+        let isP2PEnabled = false;        // Verifica se o WebRTC está conectado
         
         // ---------------------------------------------------------
         // Configurações Globais e Variáveis de Estado
@@ -375,7 +458,7 @@
         const MAX_DATA_POINTS = 50; 
         const UPDATE_INTERVAL = 1000; // 1Hz para amostragem
         
-        let isSimulating = true;
+        let isSimulating = false; // Começa pausado até escolher na Tela de Entrada
         let simulationInterval;
         let radarAngle = 0; 
         let activeDataSource = 'simulation'; 
@@ -405,7 +488,7 @@
         // Elementos de Status
         const p2pStatusIcon = document.getElementById('p2p-status-icon');
         const p2pStatusText = document.getElementById('p2p-status-text');
-        const localWebRtcIdEl = document.getElementById('local-webrtc-id');
+        const p2pEngineText = document.getElementById('p2p-engine-text');
         const broadcasterIdText = document.getElementById('broadcaster-id-text');
         const lagIndicator = document.getElementById('lag-indicator');
         const dataOriginText = document.getElementById('data-origin-text');
@@ -422,6 +505,12 @@
         const copyPeerIdBtn = document.getElementById('copy-peer-id-btn');
         const targetPeerIdInput = document.getElementById('target-peer-id-input');
         const connectP2pBtn = document.getElementById('connect-p2p-btn');
+
+        // Elementos da Tela de Entrada (Boas-Vindas)
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const welcomeSelectSim = document.getElementById('welcome-select-sim');
+        const welcomeSelectSerial = document.getElementById('welcome-select-serial');
+        const welcomeSelectP2p = document.getElementById('welcome-select-p2p');
 
         function logToTerminal(message, type = 'info') {
             const span = document.createElement('span');
@@ -448,98 +537,210 @@
         });
 
         // ---------------------------------------------------------
-        // Gestão de Conectividade Local via BroadcastChannel
+        // Gestão da Arquitetura Híbrida P2P
         // ---------------------------------------------------------
         
         function destroyP2PInstance() {
-            if (activeChannel) {
-                try {
-                    activeChannel.close();
-                } catch(e) {}
-                activeChannel = null;
+            // Fecha canais WebRTC
+            if (activePeerConnection) {
+                try { activePeerConnection.close(); } catch(e) {}
+                activePeerConnection = null;
             }
-            isBroadcasting = false;
+            peerConnections.forEach(conn => {
+                try { conn.close(); } catch(e) {}
+            });
+            peerConnections = [];
+
+            if (peerInstance) {
+                try { peerInstance.destroy(); } catch(e) {}
+                peerInstance = null;
+            }
+
+            // Fecha canais locais redundantes
+            if (broadcastChannel) {
+                try { broadcastChannel.close(); } catch(e) {}
+                broadcastChannel = null;
+            }
+
+            isP2PEnabled = false;
             p2pStatusText.textContent = "Offline";
             p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-slate-500');
             p2pConnectedCountEl.textContent = "0";
             broadcasterIdText.textContent = "Local";
+            p2pEngineText.textContent = "H\u00edbrido";
         }
 
+        // Executado no HOST (Quem envia os dados do Simulador ou ESP32)
         function setupP2PHost() {
             destroyP2PInstance();
-            const channelId = localPeerIdDisplay.textContent.trim().toUpperCase();
 
-            logToTerminal(`A abrir canal de transmissão local: ${channelId}...`, "info");
-            
+            // 1. Gera ID para a sala
+            const friendlyRoomId = 'SALA-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+            localPeerIdDisplay.textContent = friendlyRoomId;
+            targetPeerIdInput.value = friendlyRoomId;
+
+            logToTerminal(`A iniciar barramento local de dados para a sala: ${friendlyRoomId}`, "info");
+
+            // Redundância local: Cria BroadcastChannel (Sincroniza abas do mesmo navegador sem precisar de internet)
             try {
-                activeChannel = new BroadcastChannel(channelId);
-                isBroadcasting = true;
-                
-                p2pStatusText.textContent = "A partilhar";
-                p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-emerald-400 animate-pulse');
-                p2pConnectedCountEl.textContent = "Ativo";
-                logToTerminal(`Canal local pronto! Ouvintes sincronizarão automaticamente.`, "success");
-            } catch (error) {
-                logToTerminal(`Erro ao abrir canal local: ${error.message}`, "error");
+                broadcastChannel = new BroadcastChannel(friendlyRoomId);
+            } catch(e) {
+                console.warn("BroadcastChannel indisponível neste navegador.", e);
+            }
+
+            // WebRTC real para conectar dispositivos diferentes (Internet/Rede)
+            if (typeof Peer !== 'undefined') {
+                try {
+                    peerInstance = new Peer(friendlyRoomId);
+
+                    peerInstance.on('open', (id) => {
+                        isP2PEnabled = true;
+                        p2pStatusText.textContent = "Transmissor WebRTC";
+                        p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-emerald-400 animate-pulse');
+                        p2pEngineText.textContent = "WebRTC + Local";
+                        logToTerminal(`Canal WebRTC aberto! ID da sala: ${id}`, "success");
+                    });
+
+                    peerInstance.on('connection', (conn) => {
+                        conn.on('open', () => {
+                            peerConnections.push(conn);
+                            p2pConnectedCountEl.textContent = peerConnections.length;
+                            logToTerminal(`Dispositivo remoto conectado via WebRTC P2P! ID: ${conn.peer}`, "success");
+                        });
+
+                        conn.on('close', () => {
+                            peerConnections = peerConnections.filter(c => c.peer !== conn.peer);
+                            p2pConnectedCountEl.textContent = peerConnections.length;
+                            logToTerminal(`Dispositivo remoto desconectou-se.`, "warn");
+                        });
+                    });
+
+                    peerInstance.on('error', (err) => {
+                        // Trata erros de restrição de WebSocket/CORS no sandbox do Canvas de forma transparente
+                        isP2PEnabled = false;
+                        p2pEngineText.textContent = "Local (Sandbox)";
+                        p2pStatusText.textContent = "Modo Local Ativo";
+                        p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-blue-400 animate-pulse');
+                        logToTerminal("Restri\u00e7\u00e3o de Sandbox detetada. Transmitindo em redund\u00e2ncia local (mesmo browser).", "warn");
+                    });
+
+                } catch(err) {
+                    isP2PEnabled = false;
+                    p2pEngineText.textContent = "Local";
+                    logToTerminal("WebRTC indisponível. Transmitindo apenas no barramento de abas local.", "warn");
+                }
+            } else {
+                p2pEngineText.textContent = "Local";
             }
         }
 
+        // Executado no OUVINTE (Quem quer visualizar a tela do outro parceiro)
         function connectToP2PHost(hostRoomId) {
             destroyP2PInstance();
             const channelId = hostRoomId.trim().toUpperCase();
 
             if (!channelId) {
-                logToTerminal("Por favor, introduza um ID v&aacute;lido de canal.", "warn");
+                logToTerminal("Por favor, introduza um ID de Sala v\u00e1lido.", "warn");
                 return;
             }
 
-            logToTerminal(`A ligar ao canal de telemetria: ${channelId}...`, "info");
-            p2pStatusText.textContent = "A escutar...";
+            logToTerminal(`A conectar com o canal: ${channelId}...`, "info");
+            p2pStatusText.textContent = "A ligar...";
             p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-amber-500 animate-pulse');
 
+            // 1. Redundância Local (BroadcastChannel)
             try {
-                activeChannel = new BroadcastChannel(channelId);
-                
-                activeChannel.onmessage = (event) => {
-                    const data = event.data;
-                    processIncomingData(data, false);
+                broadcastChannel = new BroadcastChannel(channelId);
+                broadcastChannel.onmessage = (event) => {
+                    // Recebe e renderiza os dados
+                    processIncomingData(event.data, false);
                 };
-
-                p2pStatusText.textContent = "Sincronizado";
+                // Caso seja no mesmo navegador, já se conecta instantaneamente por aqui!
+                p2pStatusText.textContent = "Sincronizado Local";
                 p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-emerald-400 animate-pulse');
-                p2pConnectedCountEl.textContent = "1";
                 broadcasterIdText.textContent = channelId;
-                logToTerminal(`Ligado com sucesso ao canal de telemetria: ${channelId}!`, "success");
-            } catch (error) {
-                logToTerminal(`Erro ao conectar ao canal: ${error.message}`, "error");
+                p2pEngineText.textContent = "Local";
+            } catch(e) {
+                console.warn("Falha no BroadcastChannel local.", e);
+            }
+
+            // 2. Conexão WebRTC Real entre computadores diferentes
+            if (typeof Peer !== 'undefined') {
+                try {
+                    peerInstance = new Peer();
+
+                    peerInstance.on('open', (localId) => {
+                        const conn = peerInstance.connect(channelId);
+                        activePeerConnection = conn;
+
+                        conn.on('open', () => {
+                            isP2PEnabled = true;
+                            p2pStatusText.textContent = "Sincronizado WebRTC";
+                            p2pStatusIcon.setAttribute('class', 'w-4 h-4 text-emerald-400 animate-pulse');
+                            p2pEngineText.textContent = "WebRTC P2P";
+                            p2pConnectedCountEl.textContent = "1";
+                            broadcasterIdText.textContent = channelId;
+                            logToTerminal(`Ligado via internet ao transmissor ${channelId}!`, "success");
+                        });
+
+                        conn.on('data', (data) => {
+                            // Renderiza os dados vindos pela rede de outro dispositivo
+                            processIncomingData(data, false);
+                        });
+
+                        conn.on('close', () => {
+                            logToTerminal("Canal de rede encerrado.", "warn");
+                            destroyP2PInstance();
+                        });
+                    });
+
+                    peerInstance.on('error', (err) => {
+                        // Silencia avisos caso o sandbox restrinja WebRTC
+                        console.log("WebRTC Sandbox Guardrail ativo.");
+                    });
+
+                } catch(error) {
+                    console.warn("PeerJS não pôde ser inicializado:", error);
+                }
             }
         }
 
+        // Envia os dados por todas as vias disponíveis de forma unificada
         function broadcastDataP2P(data) {
-            if (!activeChannel || !isBroadcasting) return;
-
             const packet = {
                 ...data,
-                broadcasterId: "Canal Local",
+                broadcasterId: "Canal Ativo",
                 updatedAt: Date.now()
             };
 
-            try {
-                activeChannel.postMessage(packet);
-            } catch(e) {}
+            // Transmite via rede WebRTC para outros dispositivos
+            if (isP2PEnabled && peerConnections.length > 0) {
+                peerConnections.forEach(conn => {
+                    if (conn.open) {
+                        try { conn.send(packet); } catch(e) {}
+                    }
+                });
+            }
+
+            // Transmite via BroadcastChannel para outras abas do mesmo dispositivo
+            if (broadcastChannel) {
+                try {
+                    broadcastChannel.postMessage(packet);
+                } catch(e) {}
+            }
         }
 
         // Interações manuais P2P
         copyPeerIdBtn.addEventListener('click', () => {
             const idText = localPeerIdDisplay.textContent;
-            if (idText) {
+            if (idText && idText !== "A obter ID...") {
                 const tempTextArea = document.createElement("textarea");
                 tempTextArea.value = idText;
                 document.body.appendChild(tempTextArea);
                 tempTextArea.select();
                 try {
                     document.execCommand('copy');
-                    logToTerminal("ID do Canal copiado!", "success");
+                    logToTerminal("ID da Sala copiado com sucesso!", "success");
                 } catch (err) {
                     logToTerminal("Copie manualmente: " + idText, "warn");
                 }
@@ -980,6 +1181,7 @@
         }
 
         function startSimulation() {
+            isSimulating = true;
             if (simulationInterval) clearInterval(simulationInterval);
             simulationInterval = setInterval(() => {
                 const newData = generateSimulatedData();
@@ -988,12 +1190,45 @@
         }
 
         function stopSimulation() {
+            isSimulating = false;
             if (simulationInterval) clearInterval(simulationInterval);
         }
 
         // ---------------------------------------------------------
         // Handlers e Listeners da Interface Gráfica
         // ---------------------------------------------------------
+        
+        function selectMode(modeValue) {
+            dataSourceSelect.value = modeValue;
+            dataSourceSelect.dispatchEvent(new Event('change'));
+            
+            // Oculta a tela de Boas-Vindas com efeito suave
+            welcomeScreen.classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                welcomeScreen.classList.add('hidden');
+            }, 300);
+        }
+
+        // Eventos de clique da tela de entrada
+        welcomeSelectSim.addEventListener('click', () => {
+            selectMode('simulation');
+        });
+
+        welcomeSelectSerial.addEventListener('click', () => {
+            selectMode('serial');
+            setTimeout(() => {
+                connectSerialDevice();
+            }, 500);
+        });
+
+        welcomeSelectP2p.addEventListener('click', () => {
+            selectMode('p2p-listener');
+            setTimeout(() => {
+                targetPeerIdInput.focus();
+                targetPeerIdInput.select();
+            }, 500);
+        });
+
         dataSourceSelect.addEventListener('change', async (e) => {
             activeDataSource = e.target.value;
             stopSimulation();
@@ -1010,7 +1245,6 @@
                 toggleSimBtn.classList.remove('hidden');
                 simBroadcastContainer.classList.remove('hidden');
                 
-                isSimulating = true;
                 startSimulation();
                 
                 lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse');
@@ -1022,7 +1256,6 @@
                 }
 
             } else if (activeDataSource === 'serial') {
-                isSimulating = false;
                 connectSerialBtn.classList.remove('hidden');
                 toggleSimBtn.classList.add('hidden');
                 simBroadcastContainer.classList.add('hidden');
@@ -1034,7 +1267,6 @@
                 setupP2PHost();
 
             } else if (activeDataSource === 'p2p-listener') {
-                isSimulating = false;
                 connectSerialBtn.classList.add('hidden');
                 toggleSimBtn.classList.add('hidden');
                 simBroadcastContainer.classList.add('hidden');
@@ -1042,7 +1274,8 @@
                 lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse');
                 dataOriginText.textContent = 'Canal P2P';
                 
-                logToTerminal("Pronto para receber telemetria direta local.", "info");
+                logToTerminal("Pronto para receber telemetria direta local. Insira o ID do canal desejado.", "info");
+                connectToP2PHost(targetPeerIdInput.value);
             }
         });
 
@@ -1068,10 +1301,9 @@
         });
 
         toggleSimBtn.addEventListener('click', (e) => {
-            isSimulating = !isSimulating;
             const btnText = document.getElementById('btn-text');
 
-            if (isSimulating) {
+            if (!isSimulating) {
                 startSimulation();
                 btnText.textContent = 'Pausar Dados';
                 lagIndicator.setAttribute('class', 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse');
@@ -1086,9 +1318,8 @@
         window.onload = () => {
             tempChart.update();
             pressChart.update();
-            startSimulation();
             updateP2PPanelUI();
-            logToTerminal("Dashboard P2P ativo e operacional.", "success");
+            logToTerminal("Aguardando seleção do modo de entrada...", "info");
         };
 
     </script>
